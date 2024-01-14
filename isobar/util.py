@@ -75,7 +75,7 @@ def note_name_to_midi_note(name):
         else:
             name = name[:-2]
     else:
-        octave = 0
+        octave = -1
 
     try:
         # TODO: Fix such that note names can be lowercase (must also work with e.g. Bb)

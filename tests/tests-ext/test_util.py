@@ -29,10 +29,11 @@ def test_util_note_name_to_midi_note():
     assert iso.note_name_to_midi_note('C8') == 60+48
     assert iso.note_name_to_midi_note('C9') == 60+60
 
-    assert iso.note_name_to_midi_note('C') == 60-48  # C to be treated as C0
-    assert iso.note_name_to_midi_note('D') == iso.note_name_to_midi_note('D0')
-    assert iso.note_name_to_midi_note('D#') == iso.note_name_to_midi_note('D#0')
-    assert iso.note_name_to_midi_note('Eb') == iso.note_name_to_midi_note('Eb0')
+    # assert iso.note_name_to_midi_note('C') == 60-48  # C to be treated as C0
+    assert iso.note_name_to_midi_note('C') == 0  # C to be treated as C-1, important for keys
+    assert iso.note_name_to_midi_note('D') == iso.note_name_to_midi_note('D-1')
+    assert iso.note_name_to_midi_note('D#') == iso.note_name_to_midi_note('D#-1')
+    assert iso.note_name_to_midi_note('Eb') == iso.note_name_to_midi_note('Eb-1')
     assert iso.note_name_to_midi_note('C#4') == 61
     assert iso.note_name_to_midi_note('Db4') == 61
 
