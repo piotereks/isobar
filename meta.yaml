@@ -1,0 +1,39 @@
+package:
+  name: isobar_ext
+  version: 0.1.2
+
+source:
+  path: .
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python
+    - setuptools
+
+  run:
+    - python
+    - conda-forge::python-osc
+    - conda-forge::mido
+    - conda-forge::python-rtmidi
+
+test:
+  imports:
+    - isobar_ext
+
+about:
+  home: https://github.com/piotereks/isobar-ext
+  license: MIT
+  license_file: LICENSE.md
+  summary: A Python library to express and manipulate musical patterns extending the original isobar library.
+  description: |
+    This library extends the original isobar library, providing additional functionality for expressing and manipulating musical patterns.
+    For more information, please visit the [GitHub repository](https://github.com/piotereks/isobar-ext).
+
+extra:
+  recipe-maintainers:
+    - piotereks
+
