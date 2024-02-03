@@ -845,6 +845,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Action arguments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#do-not-mix-event_action-and-event_note-or-event_degree" class="md-nav__link">
+    <span class="md-ellipsis">
+      Do not mix EVENT_ACTION and EVENT_NOTE or EVENT_DEGREE
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1090,6 +1105,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Action arguments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#do-not-mix-event_action-and-event_note-or-event_degree" class="md-nav__link">
+    <span class="md-ellipsis">
+      Do not mix EVENT_ACTION and EVENT_NOTE or EVENT_DEGREE
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1142,6 +1172,61 @@
     <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="n">iso</span><span class="o">.</span><span class="n">PGlobals</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">),</span>
     <span class="s2">&quot;octave&quot;</span><span class="p">:</span> <span class="mi">4</span>
 <span class="p">})</span>
+</code></pre></div>
+
+<h3 id="do-not-mix-event_action-and-event_note-or-event_degree">Do not mix EVENT_ACTION and EVENT_NOTE or EVENT_DEGREE</h3>
+<p>Following code:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">record_time</span><span class="p">():</span>
+    <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+
+<span class="n">events</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">iso</span><span class="o">.</span><span class="n">EVENT_NOTE</span><span class="p">:</span> <span class="n">iso</span><span class="o">.</span><span class="n">PSequence</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">iso</span><span class="o">.</span><span class="n">EVENT_ACTION</span><span class="p">:</span> <span class="n">record_time</span><span class="p">,</span>
+    <span class="n">iso</span><span class="o">.</span><span class="n">EVENT_DURATION</span><span class="p">:</span> <span class="mf">0.1</span>
+<span class="p">}</span>
+<span class="n">timeline</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">timeline</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Gives in result empty track.</p>
+<div class="codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">timeline</span><span class="o">.</span><span class="n">output_device</span><span class="o">.</span><span class="n">miditrack</span>
+<span class="n">MidiTrack</span><span class="p">()</span>
+</code></pre></div>
+
+<p>While removing EVENT_ACTION events</p>
+<div class="codehilite"><pre><span></span><code><span class="n">events</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">iso</span><span class="o">.</span><span class="n">EVENT_NOTE</span><span class="p">:</span> <span class="n">iso</span><span class="o">.</span><span class="n">PSequence</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">iso</span><span class="o">.</span><span class="n">EVENT_DURATION</span><span class="p">:</span> <span class="mf">0.1</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Program returns:</p>
+<div class="codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">timeline</span><span class="o">.</span><span class="n">output_device</span><span class="o">.</span><span class="n">miditrack</span>
+<span class="n">MidiTrack</span><span class="p">([</span>
+  <span class="n">Message</span><span class="p">(</span><span class="s1">&#39;note_on&#39;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mi">48</span><span class="p">),</span>
+  <span class="n">Message</span><span class="p">(</span><span class="s1">&#39;note_off&#39;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mi">48</span><span class="p">),</span>
+  <span class="n">Message</span><span class="p">(</span><span class="s1">&#39;note_on&#39;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+  <span class="n">Message</span><span class="p">(</span><span class="s1">&#39;note_off&#39;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mi">48</span><span class="p">)])</span>
+</code></pre></div>
+
+<p>Workaround for this is to use 2 separate schedules.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">record_time</span><span class="p">():</span>
+    <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+
+<span class="n">events_action</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">iso</span><span class="o">.</span><span class="n">EVENT_ACTION</span><span class="p">:</span> <span class="n">record_time</span><span class="p">,</span>
+    <span class="n">iso</span><span class="o">.</span><span class="n">EVENT_DURATION</span><span class="p">:</span> <span class="mf">0.1</span>
+<span class="p">}</span>
+<span class="n">events_notes</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">iso</span><span class="o">.</span><span class="n">EVENT_NOTE</span><span class="p">:</span> <span class="n">iso</span><span class="o">.</span><span class="n">PSequence</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">iso</span><span class="o">.</span><span class="n">EVENT_DURATION</span><span class="p">:</span> <span class="mf">0.1</span>
+<span class="p">}</span>
+
+<span class="n">timeline</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">events_action</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">timeline</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">events_notes</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">timeline</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>
 
 
