@@ -6,12 +6,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: |
         sudo apt-get update -y
-        sudo apt-get install python3 python3-setuptools python3-pip
+        sudo apt-get install python3 python3-setuptools python3-pip python3-venv
         sudo apt-get install libasound2-dev libjack-dev
-        sudo pip3 install pytest
+        python -m venv venv
+        source venv/bin/activate
+        python -m pip install --upgrade pip
+        python -m pip install build
+        pip3 install pytest poetry
     - name: Python test
-      run: python3 setup.py test
+      run: |
+        source venv/bin/activate
+        poetry install
+        poetry run pytest
+
+
