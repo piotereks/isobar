@@ -985,6 +985,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="MidiFileInputDevice">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-track-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single track read
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-track-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi track read
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1108,6 +1132,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="MidiFileInputDevice">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-track-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single track read
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-track-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi track read
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1152,14 +1200,14 @@ output.write()
 patterns for each of the MIDI event properties (note, amplitude, duration, action), 
 or with optional <code>MidiFileInputDevice.read(multi_track_file=True)</code> returns list of <code>PDict</code>:s containing <code>PSequence</code> which
 can be scheduled for playback within a timeline:</p>
-<p>Single track read:</p>
+<h4 id="single-track-read">Single track read</h4>
 <div class="codehilite"><pre><span></span><code><span class="n">pattern</span> <span class="o">=</span> <span class="n">MidiFileInputDevice</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 <span class="n">timeline</span> <span class="o">=</span> <span class="n">iso</span><span class="o">.</span><span class="n">Timeline</span><span class="p">()</span>
 <span class="n">timeline</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>  
 <span class="n">timeline</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>
 
-<p>Multi track read:</p>
+<h4 id="multi-track-read">Multi track read</h4>
 <div class="codehilite"><pre><span></span><code><span class="n">pattern</span> <span class="o">=</span> <span class="n">MidiFileInputDevice</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">multi_track_file</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">timeline</span> <span class="o">=</span> <span class="n">iso</span><span class="o">.</span><span class="n">Timeline</span><span class="p">()</span>
 <span class="n">timeline</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>  
