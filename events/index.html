@@ -1124,6 +1124,12 @@
 <li><a href="control/">Control events</a> include MIDI control change, program change and pitchwheel messages, and can apply quasi-continuous control curves</li>
 <li><a href="action/">Action events</a> call arbitrary Python functions</li>
 </ul>
+<div class="admonition warning">
+<p class="admonition-title">Poison event types connection</p>
+<p>You cannot mix Note and Degress events with Action events in the same pattern dictionary. <br />
+<code>Action</code> event disables <code>note</code> and <code>degree</code> - algorithm will ignore other section of code. <br />
+Use separate timeline.schedule for <code>action</code> and separate from <code>note</code> or <code>degree</code>.</p>
+</div>
 
 
 

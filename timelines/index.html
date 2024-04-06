@@ -1229,6 +1229,7 @@
 <ul>
 <li><code>quantize=N</code>: quantize to the next <code>N</code> beats before beginning playback. For example, <code>quantize=1</code> will quantize to the next beat. <code>quantize=0.25</code> will quantize to a quarter-beat.</li>
 <li><code>delay=N</code>: delay by <code>N</code> beats before beginning playback. If <code>quantize</code> and <code>delay</code> are both specified, quantization is applied, and the event is scheduled <code>delay</code> beats after the quantization time.</li>
+<li><code>sel_track_idx=N</code> (optional): When utilizing multitrack output, this parameter enables the selection of the MIDI track to which a specific event needs to be assigned.</li>
 </ul>
 <p>To limit the number of iterations of an event, pass the <code>count</code> property:</p>
 <div class="codehilite"><pre><span></span><code>timeline.schedule({

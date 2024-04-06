@@ -1132,12 +1132,15 @@
 <h2 id="midifileoutputdevice">MidiFileOutputDevice</h2>
 <p>Writing MIDI files is done by setting the output device of a Timeline to a <code>MidiFileOutputDevice</code></p>
 <p>isobar-ext normally generates events in real-time according to the tempo of the Timeline. To batch process events instantaneously, set the tempo of the timeline to <code>iso.MAX_CLOCK_RATE</code>. </p>
+<p>Multi track midi files are possible - see <code>sel_track</code> parameter.</p>
 <div class="codehilite"><pre><span></span><code>filename = &quot;output.mid&quot;
 output = MidiFileOutputDevice(filename)
 
 timeline = iso.Timeline(iso.MAX_CLOCK_RATE, output_device=output)
 timeline.stop_when_done = True
-timeline.schedule({ &quot;note&quot;: iso.PSequence([ 60, 62, 64, 65 ], 1) })
+
+timeline.schedule({ &quot;note&quot;: iso.PSequence([ 60, 62, 64, 65 ], 1), sel_track=0})
+timeline.schedule({ &quot;note&quot;: iso.PSequence([ 71, 72, 74, 75 ], 1), sel_track=1})
 
 timeline.run()
 output.write()
@@ -1146,14 +1149,24 @@ output.write()
 <h2 id="midifileinputdevice">MidiFileInputDevice</h2>
 <p>Reading MIDI files is done with a <code>MidiFileInputDevice</code>.</p>
 <p>The method <code>MidiFileInputDevice.read()</code> returns a <code>PDict</code> containing <code>PSequence</code>
-patterns for each of the MIDI event properties (note, amplitude, duration), which
+patterns for each of the MIDI event properties (note, amplitude, duration, action), 
+or with optional <code>MidiFileInputDevice.read(multi_track_file=True)</code> returns list of <code>PDict</code>:s containing <code>PSequence</code> which
 can be scheduled for playback within a timeline:</p>
+<p>Single track read:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">pattern</span> <span class="o">=</span> <span class="n">MidiFileInputDevice</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 <span class="n">timeline</span> <span class="o">=</span> <span class="n">iso</span><span class="o">.</span><span class="n">Timeline</span><span class="p">()</span>
-<span class="n">timeline</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+<span class="n">timeline</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>  
 <span class="n">timeline</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>
 
+<p>Multi track read:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">pattern</span> <span class="o">=</span> <span class="n">MidiFileInputDevice</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">multi_track_file</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">timeline</span> <span class="o">=</span> <span class="n">iso</span><span class="o">.</span><span class="n">Timeline</span><span class="p">()</span>
+<span class="n">timeline</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>  
+<span class="n">timeline</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Parameter <code>multi_track_file</code>  is optional with default value <code>False</code> to ensure backward compatibility between <code>isobar-ext</code> on single track <code>isobar</code>.  Additionally <code>isobar-ext</code> handles effectively action events (e.g. <code>set_tempo</code> midi message).</p>
 <p>To discard the amplitudes and durations, and make use of just the pitch values:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">pattern</span> <span class="o">=</span> <span class="n">MidiFileInputDevice</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 <span class="n">timeline</span> <span class="o">=</span> <span class="n">iso</span><span class="o">.</span><span class="n">Timeline</span><span class="p">()</span>
