@@ -1187,13 +1187,41 @@ output = MidiFileOutputDevice(filename)
 timeline = iso.Timeline(iso.MAX_CLOCK_RATE, output_device=output)
 timeline.stop_when_done = True
 
-timeline.schedule({ &quot;note&quot;: iso.PSequence([ 60, 62, 64, 65 ], 1), sel_track=0})
-timeline.schedule({ &quot;note&quot;: iso.PSequence([ 71, 72, 74, 75 ], 1), sel_track=1})
+timeline.schedule({ &quot;note&quot;: iso.PSequence([ 60, 62, 64, 65 ], 1)}, sel_track=0)
+timeline.schedule({ &quot;note&quot;: iso.PSequence([ 71, 72, 74, 75 ], 1)}, sel_track=1)
 
 timeline.run()
 output.write()
 </code></pre></div>
 
+<p>Mutlitrack with list of dictionary provided:</p>
+<div class="codehilite"><pre><span></span><code>filename = &quot;output.mid&quot;
+output = MidiFileOutputDevice(filename)
+
+timeline = iso.Timeline(iso.MAX_CLOCK_RATE, output_device=output)
+timeline.stop_when_done = True
+events_1 = { &quot;note&quot;: iso.PSequence([ 60, 62, 64, 65 ], 1), &quot;args&quot;:  {&#39;track_idx&#39;: 0}}
+events_2 = { &quot;note&quot;: iso.PSequence([ 71, 72, 74, 75 ], 1), &quot;args&quot;:  {&#39;track_idx&#39;: 1}}
+
+timeline.schedule({ &quot;note&quot;: iso.PSequence([ 60, 62, 64, 65 ], 1)}, sel_track=0)
+timeline.schedule({ &quot;note&quot;: iso.PSequence([ 71, 72, 74, 75 ], 1)}, sel_track=1)
+
+timeline.run()
+output.write()
+</code></pre></div>
+
+<p>events_1 = {
+    iso.EVENT_NOTE: iso.PSequence(sequence=[50, 52, 55, 57], repeats=1)
+    , iso.EVENT_DURATION: iso.PSequence(sequence=[0.5, 1, 1, 1.5], repeats=1)
+    , iso.EVENT_CHANNEL: 0
+    , iso.EVENT_ACTION_ARGS: {'track_idx': 0}
+}</p>
+<p>events_2 = {
+    iso.EVENT_NOTE: iso.PSequence(sequence=[75, 69, 72, 66], repeats=1)
+    , iso.EVENT_DURATION: iso.PSequence(sequence=[1, 1, 1, 1], repeats=1)
+    , iso.EVENT_CHANNEL: 2
+    , iso.EVENT_ACTION_ARGS: {'track_idx': 5}
+}</p>
 <h2 id="midifileinputdevice">MidiFileInputDevice</h2>
 <p>Reading MIDI files is done with a <code>MidiFileInputDevice</code>.</p>
 <p>The method <code>MidiFileInputDevice.read()</code> returns a <code>PDict</code> containing <code>PSequence</code>
