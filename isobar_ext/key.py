@@ -30,10 +30,10 @@ class Key:
         return self.tonic == other.tonic and self.scale == other.scale
 
     def __str__(self):
-        return "Key: %s %s" % (midi_note_to_note_name(self.tonic)[:], self.scale.name)
+        return f"Key: {midi_note_to_note_name(self.tonic)[:]} {self.scale.name}"
 
     def __repr__(self):
-        return 'Key(%s, "%s")' % (self.tonic, self.scale.name)
+        return f'Key({self.tonic}, "{self.scale.name}")'
 
     def __hash__(self):
         return hash((self.tonic, hash(self.scale)))
@@ -157,30 +157,29 @@ class Key:
         of each. May not be bijective."""
 
         if len(self.semitones) > len(other.semitones):
-            semisA = self.semitones
-            semisB = other.semitones
+            semis_a = self.semitones
+            semis_b = other.semitones
         else:
-            semisA = other.semitones
-            semisB = self.semitones
-        semisB = list(reversed(semisB))
+            semis_a = other.semitones
+            semis_b = self.semitones
+        semis_b = list(reversed(semis_b))
 
         leading = []
-        for semiA in semisA:
+        for semiA in semis_a:
             distances = []
-            for semiB in semisB:
+            for semiB in semis_b:
                 distance = abs(semiA - semiB)
                 if distance > self.scale.octave_size / 2:
                     distance = self.scale.octave_size - distance
                 distances.append(distance)
             index = distances.index(min(distances))
-            leading.append((semiA, semisB[index]))
+            leading.append((semiA, semis_b[index]))
 
         return leading
 
     def distance(self, other):
         leading = self.voiceleading(other)
-        distance = sum([abs(a_b[0] - a_b[1]) for a_b in leading])
-        return distance
+        return sum(abs(a_b[0] - a_b[1]) for a_b in leading)
 
     def fadeto(self, other, level):
         """level between 0..1"""
@@ -194,12 +193,12 @@ class Key:
             # scale from 1..0
             level = 1.0 - (level * 2)
             count_from_a = int(round(level * len(semitones_a_only)))
-            return semitones_shared + semitones_a_only[0:count_from_a]
+            return semitones_shared + semitones_a_only[:count_from_a]
         else:
             # scale from 0..1
             level = 2 * (level - 0.5)
             count_from_b = int(round(level * len(semitones_b_only)))
-            return semitones_shared + semitones_b_only[0:count_from_b]
+            return semitones_shared + semitones_b_only[:count_from_b]
 
     @staticmethod
     def random():

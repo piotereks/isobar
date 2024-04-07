@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 
 from .core import Pattern
+from .chance import PWhite
 
 
 class PWarp(Pattern):
@@ -26,7 +27,7 @@ class PWInterpolate(PWarp):
         self.dv = 0.0
 
     def __repr__(self):
-        return "PWInterpolate(%s, %s)" % (repr(self.pattern), self.length)
+        return f"PWInterpolate({repr(self.pattern)}, {self.length})"
 
     def __next__(self):
         rv = self.value
@@ -54,6 +55,10 @@ class PWInterpolate(PWarp):
         return rv
 
 
+class PWAmp:
+    pass
+
+
 class PWSine(PWarp):
     """PWSine: Sinosoidal warp, period `length` beats, amplitude +/-<amp>.
 
@@ -66,7 +71,7 @@ class PWSine(PWarp):
         self.pos = 0.0
 
     def __repr__(self):
-        return "PWSine(%s, %s)" % (self.length, self.amp)
+        return f"PWSine({self.length}, {self.amp})"
 
     def __next__(self):
         self.pos += self.timeline.tick_duration
@@ -96,7 +101,7 @@ class PWRallantando(PWarp):
         self.dv = None
 
     def __repr__(self):
-        return "PWRallantando(%s, %s)" % (self.length, self.amp)
+        return f"PWRallantando({self.length}, {self.amp})"
 
     def __next__(self):
         rv = self.value
@@ -119,5 +124,4 @@ class PWRallantando(PWarp):
         self.pos += self.timeline.tick_duration
         self.value = self.value * self.dv
 
-        rv = math.log(rv, 2)
-        return rv
+        return math.log(rv, 2)

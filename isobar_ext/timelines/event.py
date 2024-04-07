@@ -41,7 +41,7 @@ class Event:
         parm = list({EVENT_NOTE, EVENT_ACTION, EVENT_DEGREE} & set(event_values))
         if len(parm) >= 2:
             warning_msg = f"Cannot specify both '{parm[0]}' and '{parm[1]}.'"
-            if EVENT_ACTION in (parm):
+            if EVENT_ACTION in parm:
                 warning_msg += (
                         "\nEVENT_ACTION disables EVENT_NOTE and EVENT_DEGREE.\n" +
                         "Use separate timeline.schedule for EVENT_ACTION" +
@@ -234,4 +234,4 @@ class Event:
         self.fields = event_values
 
     def __str__(self):
-        return "Event (%s)" % self.fields
+        return f"Event ({self.fields})"

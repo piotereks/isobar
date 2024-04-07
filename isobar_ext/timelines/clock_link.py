@@ -37,7 +37,8 @@ class AbletonLinkClock(Clock):
 
         super().__init__(clock_target, tempo, ticks_per_beat)
 
-    def tempo_changed_callback(self, tempo):
+    @staticmethod
+    def tempo_changed_callback(tempo):
         print("tempo changed: %.2f" % tempo)
 
     def run(self):

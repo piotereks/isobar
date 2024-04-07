@@ -5,6 +5,7 @@ class Note(object):
     names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
     def __init__(self, note=60, velocity=64, duration=1.0):
+        self.midinote = None
         self.note = note
         self.velocity = velocity
         self.duration = duration

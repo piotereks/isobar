@@ -36,7 +36,7 @@ class Scale(object):
         return scale_instance
 
     def __str__(self):
-        return "%s %s" % (self.name, self.semitones)
+        return f"{self.name} {self.semitones}"
 
     def __getitem__(self, key):
         return self.get(key)
@@ -51,13 +51,11 @@ class Scale(object):
 
     def __hash__(self):
         return hash(
-            tuple(
-                (
-                    tuple(self.semitones),
-                    tuple(self.weights),
-                    self.name,
-                    self.octave_size,
-                )
+            (
+                tuple(self.semitones),
+                tuple(self.weights),
+                self.name,
+                self.octave_size,
             )
         )
 
@@ -89,8 +87,7 @@ class Scale(object):
         return (self.octave_size * octave) + semitone
 
     def copy(self):
-        other = Scale(self.semitones, self.name)
-        return other
+        return Scale(self.semitones, self.name)
 
     def change(self):
         """Exchange two random elements of this scale."""
@@ -138,10 +135,9 @@ class Scale(object):
     @staticmethod
     def fromnotes(notes, name="unnamed scale", octave_size=12):
         notes = [note % octave_size for note in notes]
-        notes = list(dict((k, k) for k in notes).keys())
+        notes = list({k: k for k in notes}.keys())
         notes = sorted(notes)
-        scale = Scale(notes, name=name, octave_size=octave_size)
-        return scale
+        return Scale(notes, name=name, octave_size=octave_size)
 
     @staticmethod
     def all():
@@ -186,18 +182,23 @@ Scale.default = Scale.major
 class WeightedScale(Scale):
     def __init__(
             self,
-            semitones=[0, 2, 4, 5, 7, 9, 11],
-            weights=[1 / 7.0] * 7,
+            semitones=None,
+            weights=None,
             name="major",
             octave_size=12,
     ):
         Scale.__init__(self, semitones, name=name, octave_size=octave_size)
+        if weights is None:
+            weights = [1 / 7.0] * 7
+        if semitones is None:
+            semitones = [0, 2, 4, 5, 7, 9, 11]
         self.weights = weights
+        self.semitones = semitones
         if name not in Scale.dict:
             Scale.dict[name] = self
 
     def __str__(self):
-        return "%s %s weights = %s" % (self.name, self.semitones, self.weights)
+        return f"{self.name} {self.semitones} weights = {self.weights}"
 
     @staticmethod
     def fromnotes(notes, name="unnamed scale", octave_size=12):
@@ -208,14 +209,10 @@ class WeightedScale(Scale):
                 notes_dict[note] = 0
             notes_dict[note] += 1.0 / len(note_sequence)
 
-        notes_unique = list(dict((k, k) for k in note_sequence).keys())
+        notes_unique = list({k: k for k in note_sequence}.keys())
         notes_unique = sorted(notes_unique)
-        weights = []
-        for note in notes_unique:
-            weights.append(notes_dict[note])
-
-        scale = WeightedScale(notes_unique, weights, name=name, octave_size=octave_size)
-        return scale
+        weights = [notes_dict[note] for note in notes_unique]
+        return WeightedScale(notes_unique, weights, name=name, octave_size=octave_size)
 
     @staticmethod
     def fromorder(notes, name="unnamed scale", octave_size=12):
@@ -223,5 +220,4 @@ class WeightedScale(Scale):
         weights = [len(notes) - n for n in range(len(notes))]
         weights = normalize(weights)
 
-        scale = WeightedScale(notes, weights, name=name, octave_size=octave_size)
-        return scale
+        return WeightedScale(notes, weights, name=name, octave_size=octave_size)

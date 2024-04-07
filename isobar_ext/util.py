@@ -24,9 +24,7 @@ def normalize(array: list[float]) -> list[float]:
     """
     Normalise an array to sum to 1.0.
     """
-    if sum(array) == 0:
-        return array
-    return [float(n) / sum(array) for n in array]
+    return array if sum(array) == 0 else [float(n) / sum(array) for n in array]
 
 
 def windex(weights: list[float], rng=random) -> float:
@@ -77,10 +75,7 @@ def note_name_to_midi_note(name):
     if name[-1].isdigit():
         sign = -1 if name[-2] == "-" else 1
         octave = sign * int(name[-1])
-        if sign == 1:
-            name = name[:-1]
-        else:
-            name = name[:-2]
+        name = name[:-1] if sign == 1 else name[:-2]
     else:
         octave = -1
 
@@ -89,8 +84,8 @@ def note_name_to_midi_note(name):
         index = note_names.index(
             [nameset for nameset in note_names if name in nameset][0]
         )
-    except IndexError:
-        raise UnknownNoteName("Unknown note name: %s" % name)
+    except IndexError as e:
+        raise UnknownNoteName(f"Unknown note name: {name}") from e
 
     return (octave + 1) * 12 + index
 
@@ -105,21 +100,19 @@ def midi_note_to_note_name(note: float) -> str:
 
     degree = int(note) % len(note_names)
     octave = int(note / len(note_names)) - 1
-    str = "%s%d" % (note_names[degree][0], octave)
+    v_str = "%s%d" % (note_names[degree][0], octave)
     frac = math.modf(note)[0]
     if frac > 0:
-        str = str + " + %2f" % frac
+        v_str = v_str + " + %2f" % frac
 
-    return str
+    return v_str
 
 
 def midi_note_to_frequency(note: float) -> float:
     """
     Maps a MIDI note index to a frequency.
     """
-    if note is None:
-        return None
-    return 440.0 * pow(2, (note - 69.0) / 12)
+    return None if note is None else 440.0 * pow(2, (note - 69.0) / 12)
 
 
 def midi_note_to_frequency_just_intonation(note):
@@ -140,8 +133,7 @@ def midi_note_to_frequency_just_intonation(note):
     octave = note // 12
     octave_note = note % 12
     octave_base_frequency = midi_note_to_frequency(octave * 12)
-    octave_note_frequency = octave_base_frequency * note_ratios[octave_note]
-    return octave_note_frequency
+    return octave_base_frequency * note_ratios[octave_note]
 
 
 def note_name_to_frequency(note_name: str) -> float:
@@ -254,10 +246,14 @@ def filter_tone_row(
     returns a tuple (<bool> acceptable, <int> pitch_bend)
     """
     bends = bipolar_diverge(bend_limit)
-    for bend in bends:
-        if all(((note + bend) % 12) in target for note in source):
-            return (True, bend)
-    return (False, 0)
+    return next(
+        (
+            (True, bend)
+            for bend in bends
+            if all(((note + bend) % 12) in target for note in source)
+        ),
+        (False, 0),
+    )
 
 
 def random_seed(seed: int) -> None:
@@ -284,7 +280,7 @@ def make_clock_multiplier(output_clock_rate: int, input_clock_rate: int) -> Gene
     multiple = 1.0
     if output_clock_rate and input_clock_rate:
         multiple = output_clock_rate / input_clock_rate
-    if (multiple > 1 and int(multiple) != multiple) or (
+    if (1 < multiple != int(multiple)) or (
             multiple < 1 and 1 / multiple != int(1 / multiple)
     ):
         raise ClockException(
