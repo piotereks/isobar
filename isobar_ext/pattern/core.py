@@ -13,7 +13,7 @@ import isobar_ext
 class Pattern:
     """ Pattern: Abstract superclass of all pattern generators.
 
-        Patterns are at the core of isobar. A Pattern implements the iterator
+        Patterns are at the core of isobar_ext. A Pattern implements the iterator
         protocol, representing a sequence of values which are iteratively
         returned by the next() method. A pattern may be finite, after which
         point it raises a StopIteration exception. Call reset() to return
@@ -255,15 +255,15 @@ class Pattern:
         if isinstance(v, Pattern):
             return v
         elif isinstance(v, dict):
-            return isobar.PDict(v)
+            return isobar_ext.PDict(v)
         elif isinstance(v, str):
-            from isobar_ext.shorthand.notation import parse_notation
+            from isobar_ext.notation import parse_notation
             try:
                 return parse_notation(v)
             except ValueError:
-                return isobar.PConstant(v)
+                return isobar_ext.PConstant(v)
         else:
-            return isobar.PConstant(v)
+            return isobar_ext.PConstant(v)
 
 class PConstant(Pattern):
     """ PConstant: Returns a fixed value.
@@ -402,7 +402,7 @@ class PDict(Pattern):
         Args:
             filename (str): Filename to read from (.mid)
         """
-        from isobar.io.midifile import MidiFileInputDevice
+        from isobar_ext.io.midifile import MidiFileInputDevice
         reader = MidiFileInputDevice(filename)
         self.dict = reader.read(quantize=quantize)
 
@@ -414,10 +414,10 @@ class PDict(Pattern):
             filename (str): Filename to write to (.mid)
             quantize (float): Quantization level. 1.0 = quantize to beat, 0.25 = quantize to quarter-beat, etc.
         """
-        from isobar.io.midifile import MidiFileOutputDevice
+        from isobar_ext.io.midifile import MidiFileOutputDevice
         writer = MidiFileOutputDevice(filename)
-        clock = isobar.DummyClock()
-        timeline = isobar.Timeline(self, output_device=writer, clock_source=clock)
+        clock = isobar_ext.DummyClock()
+        timeline = isobar_ext.Timeline(self, output_device=writer, clock_source=clock)
         timeline.schedule(self)
         timeline.stop_when_done = True
         try:
