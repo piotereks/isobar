@@ -18,20 +18,20 @@ log = logging.getLogger(__name__)
 
 
 class PSequence(Pattern):
-    """Sequence: Sequence of values based on an array
-    Takes an input list, and repeats the items in this list.
+    """ Sequence: Sequence of values based on an array
+        Takes an input list, and repeats the items in this list.
 
-    >>> p = PSeq([ 1, 2, 3, 5 ])
-    >>> p.nextn(10)
-    [1, 2, 3, 5, 1, 2, 3, 5, 1, 2, 3, 5, 1, 2, 3, 5]
-    """
-
+        >>> p = PSeq([ 1, 2, 3, 5 ])
+        >>> p.nextn(10)
+        [1, 2, 3, 5, 1, 2, 3, 5, 1, 2, 3, 5, 1, 2, 3, 5]
+        """
+    
     abbreviation = "pseq"
 
     def __init__(self, sequence: Iterable = None, repeats: int = sys.maxsize):
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # take a copy of the list to avoid changing the original
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         if not hasattr(sequence, "__getitem__"):
             raise ValueError("Sequence must take a list argument")
         if sequence is None:
@@ -44,7 +44,7 @@ class PSequence(Pattern):
         self.reset()
 
     def __repr__(self):
-        return "PSequence(%s, %s)" % (repr(self.sequence), self.repeats)
+        return ("PSequence(%s, %s)" % (repr(self.sequence), self.repeats))
 
     def reset(self):
         super().reset()
@@ -80,18 +80,16 @@ class PSequence(Pattern):
         """
         return self.sequence[item]
 
-
 # Backwards-compatbility
 PSeq = PSequence
 
-
 class PSeries(Pattern):
-    """PSeries: Arithmetic series, beginning at `start`, increment by `step`
+    """ PSeries: Arithmetic series, beginning at `start`, increment by `step`
 
-    >>> p = PSeries(3, 9)
-    >>> p.nextn(16)
-    [3, 12, 21, 30, 39, 48, 57, 66, 75, 84, 93, 102, 111, 120, 129, 138]
-    """
+        >>> p = PSeries(3, 9)
+        >>> p.nextn(16)
+        [3, 12, 21, 30, 39, 48, 57, 66, 75, 84, 93, 102, 111, 120, 129, 138]
+        """
 
     def __init__(self, start: float = 0, step: float = 1, length: int = sys.maxsize):
         self.start = start
@@ -101,7 +99,7 @@ class PSeries(Pattern):
         self.count = 0
 
     def __repr__(self):
-        return "PSeries(%s, %s, %s)" % (self.start, self.step, self.length)
+        return ("PSeries(%s, %s, %s)" % (self.start, self.step, self.length))
 
     def reset(self):
         super().reset()
@@ -120,14 +118,13 @@ class PSeries(Pattern):
         self.count += 1
         return n
 
-
 class PRange(Pattern):
-    """PRange: Similar to PSeries, but specify a max/step value.
+    """ PRange: Similar to PSeries, but specify a max/step value.
 
-    >>> p = PRange(0, 20, 2)
-    >>> p.nextn(16)
-    [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
-    """
+        >>> p = PRange(0, 20, 2)
+        >>> p.nextn(16)
+        [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+        """
 
     def __init__(self, start: float = 0, end: float = 128, step=1):
         """
@@ -142,7 +139,7 @@ class PRange(Pattern):
         self.reset()
 
     def __repr__(self):
-        return "PRange(%s, %s, %s)" % (self.start, self.end, repr(self.step))
+        return ("PRange(%s, %s, %s)" % (self.start, self.end, repr(self.step)))
 
     def reset(self):
         super().reset()
@@ -159,18 +156,15 @@ class PRange(Pattern):
         self.value += step
         return rv
 
-
 class PGeom(Pattern):
-    """PGeom: Geometric series, beginning at `start`, multiplied by `step`
+    """ PGeom: Geometric series, beginning at `start`, multiplied by `step`
 
-    >>> p = PGeom(1, 2)
-    >>> p.nextn(16)
-    [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
-    """
+        >>> p = PGeom(1, 2)
+        >>> p.nextn(16)
+        [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
+        """
 
-    def __init__(
-        self, start: float = 1, multiply: float = 2, length: int = sys.maxsize
-    ):
+    def __init__(self, start: float = 1, multiply: float = 2, length: int = sys.maxsize):
         self.start = start
         self.value = start
         self.multiply = multiply
@@ -178,7 +172,7 @@ class PGeom(Pattern):
         self.count = 0
 
     def __repr__(self):
-        return "PGeom(%s, %s, %s)" % (self.start, self.multiply, self.length)
+        return ("PGeom(%s, %s, %s)" % (self.start, self.multiply, self.length))
 
     def reset(self):
         super().reset()
@@ -196,21 +190,20 @@ class PGeom(Pattern):
         self.count += 1
         return rv
 
-
 class PImpulse(Pattern):
-    """PImpulse: Outputs a 1 every <period> events, otherwise 0.
+    """ PImpulse: Outputs a 1 every <period> events, otherwise 0.
 
-    >>> p = PImpulse(4)
-    >>> p.nextn(16)
-    [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
-    """
+        >>> p = PImpulse(4)
+        >>> p.nextn(16)
+        [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+        """
 
     def __init__(self, period: int):
         self.period = period
         self.pos = 0
 
     def __repr__(self):
-        return "PImpulse(%s)" % self.period
+        return ("PImpulse(%s)" % self.period)
 
     def reset(self):
         super().reset()
@@ -230,17 +223,16 @@ class PImpulse(Pattern):
 
         return rv
 
-
 class PLoop(Pattern):
-    """PLoop: Repeats a finite `pattern` for `n` repeats.
-    Useful for pattern generators which don't natively loop.
+    """ PLoop: Repeats a finite `pattern` for `n` repeats.
+        Useful for pattern generators which don't natively loop.
 
-    Input must be finite or results may vary.
+        Input must be finite or results may vary.
 
-    >>> p = PLoop(PSeq([ 1, 4, 9 ], 1))
-    >>> p.nextn(16)
-    [1, 4, 9, 1, 4, 9, 1, 4, 9, 1, 4, 9, 1, 4, 9, 1]
-    """
+        >>> p = PLoop(PSeq([ 1, 4, 9 ], 1))
+        >>> p.nextn(16)
+        [1, 4, 9, 1, 4, 9, 1, 4, 9, 1, 4, 9, 1, 4, 9, 1]
+        """
 
     def __init__(self, pattern: Pattern, count: int = sys.maxsize):
         self.pattern = pattern
@@ -251,7 +243,7 @@ class PLoop(Pattern):
         self.values = []
 
     def __repr__(self):
-        return "PLoop(%s, %s)" % (repr(self.pattern), self.count)
+        return ("PLoop(%s, %s)" % (repr(self.pattern), self.count))
 
     def reset(self):
         super().reset()
@@ -279,14 +271,13 @@ class PLoop(Pattern):
         self.pos += 1
         return rv
 
-
 class PPingPong(Pattern):
-    """PPingPong: Ping-pong input pattern back and forth N times.
+    """ PPingPong: Ping-pong input pattern back and forth N times.
 
-    >>> p = PPingPong(PSeq([ 1, 4, 9 ], 1), 10)
-    >>> p.nextn(16)
-    [1, 4, 9, 4, 1, 4, 9, 4, 1, 4, 9, 4, 1, 4, 9, 4]
-    """
+        >>> p = PPingPong(PSeq([ 1, 4, 9 ], 1), 10)
+        >>> p.nextn(16)
+        [1, 4, 9, 4, 1, 4, 9, 4, 1, 4, 9, 4, 1, 4, 9, 4]
+        """
 
     def __init__(self, pattern: Pattern, count: int = 1):
         self.pattern = pattern
@@ -294,7 +285,7 @@ class PPingPong(Pattern):
         self.reset()
 
     def __repr__(self):
-        return "PPingPong(%s, %s)" % (repr(self.pattern), self.count)
+        return ("PPingPong(%s, %s)" % (repr(self.pattern), self.count))
 
     def reset(self):
         super().reset()
@@ -318,23 +309,15 @@ class PPingPong(Pattern):
 
         return rv
 
-
 class PCreep(Pattern):
-    """PCreep: Loop `length`-note segment, progressing `creep` notes after `repeats` repeats.
+    """ PCreep: Loop `length`-note segment, progressing `creep` notes after `repeats` repeats.
 
-    >>> p = PCreep(PSeries(), 3, 1, 2)
-    >>> p.nextn(16)
-    [0, 1, 2, 0, 1, 2, 1, 2, 3, 1, 2, 3, 2, 3, 4, 2]
-    """
+        >>> p = PCreep(PSeries(), 3, 1, 2)
+        >>> p.nextn(16)
+        [0, 1, 2, 0, 1, 2, 1, 2, 3, 1, 2, 3, 2, 3, 4, 2]
+        """
 
-    def __init__(
-        self,
-        pattern: Pattern,
-        length: int = 4,
-        creep: int = 1,
-        repeats: int = 1,
-        prob: float = 1,
-    ):
+    def __init__(self, pattern: Pattern, length: int = 4, creep: int = 1, repeats: int = 1, prob: float = 1):
         self.pattern = pattern
         self.length = length
         self.creep = creep
@@ -343,13 +326,7 @@ class PCreep(Pattern):
         self.reset()
 
     def __repr__(self):
-        return "PCreep(%s, %s, %s, %s, %s)" % (
-            repr(self.pattern),
-            self.length,
-            self.creep,
-            self.repeats,
-            self.prob,
-        )
+        return ("PCreep(%s, %s, %s, %s, %s)" % (repr(self.pattern), self.length, self.creep, self.repeats, self.prob))
 
     def reset(self):
         super().reset()
@@ -374,22 +351,22 @@ class PCreep(Pattern):
             repeat = random.uniform(0, 1) < prob
 
             if self.rcount >= repeats or not repeat:
-                # ------------------------------------------------------------------------
+                #------------------------------------------------------------------------
                 # finished creeping, pull some more data from our buffer
-                # ------------------------------------------------------------------------
+                #------------------------------------------------------------------------
                 for n in range(creep):
                     self.buffer.pop(0)
                     self.buffer.append(next(self.pattern))
                 self.rcount = 1
             else:
-                # ------------------------------------------------------------------------
+                #------------------------------------------------------------------------
                 # finished the Nth repeat but, still more repeats to do
-                # ------------------------------------------------------------------------
+                #------------------------------------------------------------------------
                 self.rcount += 1
 
-            # ------------------------------------------------------------------------
+            #------------------------------------------------------------------------
             # reset to the start of our buffer
-            # ------------------------------------------------------------------------
+            #------------------------------------------------------------------------
             if not repeat:
                 self.pos -= 1
             else:
@@ -398,17 +375,16 @@ class PCreep(Pattern):
         self.pos += 1
         return self.buffer[self.pos - 1]
 
-
 class PStutter(Pattern):
-    """PStutter: Play each note of `pattern` `count` times.
-    Is really a more convenient way to do:
+    """ PStutter: Play each note of `pattern` `count` times.
+        Is really a more convenient way to do:
 
-        PCreep(pattern, 1, 1, count)
+            PCreep(pattern, 1, 1, count)
 
-    >>> p = PStutter(PSeries(), 2)
-    >>> p.nextn(16)
-    [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7]
-    """
+        >>> p = PStutter(PSeries(), 2)
+        >>> p.nextn(16)
+        [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7]
+        """
 
     def __init__(self, pattern: Pattern, count: int = 2):
         self.pattern = Pattern.pattern(pattern)
@@ -418,7 +394,7 @@ class PStutter(Pattern):
         self.value = 0
 
     def __repr__(self):
-        return "PStutter(%s, %s)" % (repr(self.pattern), self.count)
+        return ("PStutter(%s, %s)" % (repr(self.pattern), self.count))
 
     def __next__(self):
         if self.pos >= self.count_current:
@@ -428,13 +404,13 @@ class PStutter(Pattern):
         self.pos += 1
         return self.value
 
-
 class PSubsequence(Pattern):
-    """PSubsequence: Returns a finite subsequence of an input pattern.
+    """ PSubsequence: Returns a finite subsequence of an input pattern.
 
-    >>> p = PSubsequence(...)
-    >>> p.nextn(16)
-    """
+        >>> p = PSubsequence(PSeries(0, 1), 2, 4)
+        >>> p.nextn(16)
+        [2, 3, 4, 5]
+        """
 
     def __init__(self, pattern: Pattern, offset: int, length: int):
         self.pattern = pattern
@@ -444,11 +420,7 @@ class PSubsequence(Pattern):
         self.values = []
 
     def __repr__(self):
-        return "PSubsequence(%s, %s, %s)" % (
-            repr(self.pattern),
-            self.offset,
-            self.length,
-        )
+        return ("PSubsequence(%s, %s, %s)" % (repr(self.pattern), self.offset, self.length))
 
     def reset(self):
         super().reset()
@@ -469,22 +441,15 @@ class PSubsequence(Pattern):
 
         return rv
 
-
 class PInterpolate(Pattern):
-    def __init__(
-        self, pattern: Pattern, steps: int, interpolation: str = INTERPOLATION_LINEAR
-    ):
+    def __init__(self, pattern: Pattern, steps: int, interpolation: str = INTERPOLATION_LINEAR):
         self.pattern = pattern
         self.steps = steps
         self.interpolation = interpolation
         self.reset()
 
     def __repr__(self):
-        return "PInterpolate(%s, %s, %s)" % (
-            repr(self.pattern),
-            self.steps,
-            repr(self.interpolation),
-        )
+        return ("PInterpolate(%s, %s, %s)" % (repr(self.pattern), self.steps, repr(self.interpolation)))
 
     def reset(self):
         super().reset()
@@ -496,33 +461,27 @@ class PInterpolate(Pattern):
         if self.pos == len(self.step_values):
             vsteps = int(Pattern.value(self.steps))
 
-            # --------------------------------------------------------------------------------
+            #--------------------------------------------------------------------------------
             # Special case in which next step duration is zero: set the target value
             # instantly, and pull a new target value.
-            # --------------------------------------------------------------------------------
+            #--------------------------------------------------------------------------------
             while vsteps == 0:
                 self.value = next(self.pattern)
                 vsteps = int(Pattern.value(self.steps))
             target = next(self.pattern)
 
-            # --------------------------------------------------------------------------------
+            #--------------------------------------------------------------------------------
             # Calculate interpolated values.
-            # --------------------------------------------------------------------------------
+            #--------------------------------------------------------------------------------
             if self.interpolation == INTERPOLATION_NONE:
-                self.step_values = list(self.value for n in range(vsteps - 1)) + [
-                    target
-                ]
+                self.step_values = list(self.value for n in range(vsteps - 1)) + [target]
             elif self.interpolation == INTERPOLATION_LINEAR:
                 dt = target - self.value
-                self.step_values = list(
-                    self.value + dt * (n + 1) / vsteps for n in range(vsteps)
-                )
+                self.step_values = list(self.value + dt * (n + 1) / vsteps for n in range(vsteps))
             elif self.interpolation == INTERPOLATION_COSINE:
                 dt = target - self.value
-                self.step_values = list(
-                    self.value + dt * 0.5 * (1.0 - math.cos(math.pi * (n + 1) / vsteps))
-                    for n in range(vsteps)
-                )
+                self.step_values = list(self.value + dt * 0.5 * (1.0 - math.cos(math.pi * (n + 1) / vsteps))
+                                        for n in range(vsteps))
             else:
                 raise ValueError("Interpolation type not recognised")
             self.pos = 0
@@ -531,16 +490,15 @@ class PInterpolate(Pattern):
         self.pos += 1
         return self.value
 
-
 class PReverse(Pattern):
-    """PReverse: Reverses a finite sequence."""
+    """ PReverse: Reverses a finite sequence. """
 
     def __init__(self, input: Pattern):
         self.input = input
         self.reset()
 
     def __repr__(self):
-        return "PReverse(%s)" % repr(self.input)
+        return ("PReverse(%s)" % repr(self.input))
 
     def reset(self):
         super().reset()
@@ -549,21 +507,20 @@ class PReverse(Pattern):
     def __next__(self):
         return next(self.values)
 
-
 class PReset(Pattern):
-    """PReset: Resets `pattern` whenever `trigger` is true
+    """ PReset: Resets `pattern` whenever `trigger` is true
 
-    >>> p = PReset(PSeries(0, 1), PImpulse(4))
-    >>> p.nextn(16)
-    [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
-    """
+        >>> p = PReset(PSeries(0, 1), PImpulse(4))
+        >>> p.nextn(16)
+        [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
+        """
 
     def __init__(self, pattern: Pattern, trigger):
         self.pattern = pattern
         self.trigger = trigger
 
     def __repr__(self):
-        return "PReset(%s, %s)" % (repr(self.pattern), repr(self.trigger))
+        return ("PReset(%s, %s)" % (repr(self.pattern), repr(self.trigger)))
 
     def __next__(self):
         trigger_input = next(self.trigger)
@@ -572,14 +529,13 @@ class PReset(Pattern):
 
         return next(self.pattern)
 
-
 class PCounter(Pattern):
-    """PCounter: Increments a counter by 1 for each zero-crossing in `trigger`.
+    """ PCounter: Increments a counter by 1 for each zero-crossing in `trigger`.
 
-    >>> p = PCounter(PImpulse(4))
-    >>> p.nextn(16)
-    [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4]
-    """
+        >>> p = PCounter(PImpulse(4))
+        >>> p.nextn(16)
+        [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4]
+        """
 
     def __init__(self, trigger):
         self.trigger = trigger
@@ -587,7 +543,7 @@ class PCounter(Pattern):
         self.count = 0
 
     def __repr__(self):
-        return "PCounter(%s)" % repr(self.trigger)
+        return ("PCounter(%s)" % repr(self.trigger))
 
     def __next__(self):
         value = next(self.trigger)
@@ -599,15 +555,14 @@ class PCounter(Pattern):
 
         return self.count
 
-
 class PCollapse(Pattern):
-    """PCollapse: Skip over any rests in `input`"""
+    """ PCollapse: Skip over any rests in `input` """
 
     def __init__(self, input):
         self.input = input
 
     def __repr__(self):
-        return "PCollapse(%s)" % repr(self.input)
+        return ("PCollapse(%s)" % repr(self.input))
 
     def __next__(self):
         rv = None
@@ -615,16 +570,15 @@ class PCollapse(Pattern):
             rv = Pattern.value(self.input)
         return rv
 
-
 class PNoRepeats(Pattern):
-    """PNoRepeats: Skip over repeated values in `input`"""
+    """ PNoRepeats: Skip over repeated values in `input` """
 
     def __init__(self, input):
         self.input = input
         self.value = sys.maxsize
 
     def __repr__(self):
-        return "PNoRepeats(%s)" % repr(self.input)
+        return ("PNoRepeats(%s)" % repr(self.input))
 
     def __next__(self):
         rv = sys.maxsize
@@ -633,9 +587,9 @@ class PNoRepeats(Pattern):
         self.value = rv
         return rv
 
-
 class PPad(Pattern):
-    """PPad: Pad `pattern` with rests until it reaches length `length`."""
+    """ PPad: Pad `pattern` with rests until it reaches length `length`.
+        """
 
     def __init__(self, pattern: Pattern, length: int):
         self.pattern = pattern
@@ -643,7 +597,7 @@ class PPad(Pattern):
         self.reset()
 
     def __repr__(self):
-        return "PPad(%s, %s)" % (repr(self.pattern), self.length)
+        return ("PPad(%s, %s)" % (repr(self.pattern), self.length))
 
     def reset(self):
         super().reset()
@@ -660,13 +614,12 @@ class PPad(Pattern):
         self.count += 1
         return rv
 
-
 class PPadToMultiple(Pattern):
-    """PPadToMultiple: Pad `pattern` with rests until its length is divisible by `multiple`.
-    Enforces a minimum padding of `minimum_pad`.
+    """ PPadToMultiple: Pad `pattern` with rests until its length is divisible by `multiple`.
+        Enforces a minimum padding of `minimum_pad`.
 
-    Useful to create patterns which occupy a whole number of bars.
-    """
+        Useful to create patterns which occupy a whole number of bars.
+        """
 
     def __init__(self, pattern: Pattern, multiple: float, minimum_pad: int = 0):
         self.pattern = pattern
@@ -677,11 +630,7 @@ class PPadToMultiple(Pattern):
         self.terminated = False
 
     def __repr__(self):
-        return "PPadToMultiple(%s, %s, %s)" % (
-            repr(self.pattern),
-            self.multiple,
-            self.minimum_pad,
-        )
+        return ("PPadToMultiple(%s, %s, %s)" % (repr(self.pattern), self.multiple, self.minimum_pad))
 
     def __next__(self):
         try:
@@ -696,23 +645,21 @@ class PPadToMultiple(Pattern):
         self.count += 1
         return rv
 
-
 class PArpeggiator(PStochasticPattern):
-    """PArpeggiator: Arpeggiator.
+    """ PArpeggiator: Arpeggiator.
 
-    <type> can be one of:
-        PArp.UP
-        PArp.DOWN
-        PArp.UPDOWN
-        PArp.CONVERGE
-        PArp.DIVERGE
-        PArp.RANDOM
+        <type> can be one of:
+            PArp.UP
+            PArp.DOWN
+            PArp.UPDOWN
+            PArp.CONVERGE
+            PArp.DIVERGE
+            PArp.RANDOM
 
-    >>> p = PLoop(PArpeggiator(Chord.major, PArpeggiator.CONVERGE))
-    >>> p.nextn(16)
-    [0, 12, 4, 7, 0, 12, 4, 7, 0, 12, 4, 7, 0, 12, 4, 7]
-    """
-
+        >>> p = PLoop(PArpeggiator(Chord.major, PArpeggiator.CONVERGE))
+        >>> p.nextn(16)
+        [0, 12, 4, 7, 0, 12, 4, 7, 0, 12, 4, 7, 0, 12, 4, 7]
+        """
     UP = 0
     DOWN = 1
     CONVERGE = 2
@@ -725,7 +672,7 @@ class PArpeggiator(PStochasticPattern):
     BUILD = 8
     BREAK = 9
     ROOTBOUNCE = 10
-
+    
     abbreviation = "parp"
 
     def __init__(self, chord: Chord = Chord.major, type: int = UP, loop: bool = False):
@@ -738,20 +685,20 @@ class PArpeggiator(PStochasticPattern):
         self.offsets = []
 
         try:
-            # ------------------------------------------------------------------------
+            #------------------------------------------------------------------------
             # prefer to specify a chord (or Key)
-            # ------------------------------------------------------------------------
+            #------------------------------------------------------------------------
             self._notes = self.chord.semitones
         except AttributeError:
-            # ------------------------------------------------------------------------
+            #------------------------------------------------------------------------
             # can alternatively specify a list of notes
-            # ------------------------------------------------------------------------
+            #------------------------------------------------------------------------
             self._notes = self.chord
 
         self.restart()
 
     def __repr__(self):
-        return "PArpeggiator(%s, %s)" % (repr(self.chord), repr(self.type))
+        return ("PArpeggiator(%s, %s)" % (repr(self.chord), repr(self.type)))
 
     def get_notes(self):
         return self._notes
@@ -769,85 +716,52 @@ class PArpeggiator(PStochasticPattern):
         elif self.type == PArpeggiator.DOWN:
             self.offsets = list(reversed(list(range(len(self._notes)))))
         elif self.type == PArpeggiator.CONVERGE:
-            self.offsets = [
-                (n // 2) if (n % 2 == 0) else (0 - (n + 1) // 2)
-                for n in range(len(self._notes))
-            ]
+            self.offsets = [(n // 2) if (n % 2 == 0) else (0 - (n + 1) // 2) for n in range(len(self._notes))]
         elif self.type == PArpeggiator.DIVERGE:
             if len(self._notes) % 2 == 0:
-                self.offsets = [
-                    (
-                        (len(self._notes) // 2 - 1) - (n // 2)
-                        if (n % 2 == 0)
-                        else (len(self._notes) // 2 + n // 2)
-                    )
-                    for n in range(len(self.notes))
-                ]
+                self.offsets = [(len(self._notes) // 2 - 1) - (n // 2) if (n % 2 == 0) else
+                                (len(self._notes) // 2 + n // 2) for n in range(len(self.notes))]
             else:
-                self.offsets = [
-                    (
-                        (len(self._notes) // 2 - 1) - (n // 2)
-                        if (n % 2 == 1)
-                        else (len(self._notes) // 2 + n // 2)
-                    )
-                    for n in range(len(self.notes))
-                ]
+                self.offsets = [(len(self._notes) // 2 - 1) - (n // 2) if (n % 2 == 1) else
+                                (len(self._notes) // 2 + n // 2) for n in range(len(self.notes))]
         elif self.type == PArpeggiator.RANDOM:
             self.offsets = list(range(len(self._notes)))
             self.rng.shuffle(self.offsets)
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # Abnormal length patterns
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         elif self.type == PArpeggiator.UPDOWN:
             # Min length (for loop): 2
-            self.offsets = list(range(len(self._notes)))[:-1] + list(
-                reversed(list(range(len(self._notes))))
-            )
-            if self.loop and len(self._notes) > 1:
+            self.offsets = list(range(len(self._notes)))[:-1] + list(reversed(list(range(len(self._notes)))))
+            if (self.loop and len(self._notes) > 1):
                 # Remove the last element to prevent double notes
                 self.offsets = self.offsets[:-1]
         elif self.type == PArpeggiator.DOWNUP:
             # Min length (for loop): 2
-            self.offsets = list(reversed(list(range(len(self._notes)))))[:-1] + list(
-                range(len(self._notes))
-            )
-            if self.loop and len(self._notes) > 1:
+            self.offsets = list(reversed(list(range(len(self._notes)))))[:-1] + list(range(len(self._notes)))
+            if (self.loop and len(self._notes) > 1):
                 self.offsets = self.offsets[:-1]
         elif self.type == PArpeggiator.BUILD:
             # 0, 0, 1, 0, 1, 2, 0, 1, 2, 3, ...
             # Min length: 2
-            if len(self._notes) < 2:
+            if (len(self._notes) < 2):
                 raise ValueError("Arpeggiator type BUILD requires at least 2 notes")
-            self.offsets = list(
-                itertools.chain.from_iterable(
-                    [range(0, n + 1) for n in range(len(self._notes))]
-                )
-            )
+            self.offsets = list(itertools.chain.from_iterable([range(0,n + 1) for n in range(len(self._notes))]))
         elif self.type == PArpeggiator.BREAK:
             # n, n, n-1, n, n-1, n-2, n, n-1, n-2, n-3, ...
             # Min length: 2
-            if len(self._notes) < 2:
+            if (len(self._notes) < 2):
                 raise ValueError("Arpeggiator type BREAK requires at least 2 notes")
-            self.offsets = list(
-                itertools.chain.from_iterable(
-                    [range(n - 1, -1, -1) for n in range(len(self._notes), -1, -1)]
-                )
-            )
+            self.offsets = list(itertools.chain.from_iterable([range(n - 1, -1, -1) for n in range(len(self._notes), -1, -1)]))
         elif self.type == PArpeggiator.ROOTBOUNCE:
             # 0, 1, 0, 2, ..., 0, n, 0, n - 1, ..., 0, 2, 0, 1, 0
             # Min length: 3
-            if len(self._notes) < 3:
-                raise ValueError(
-                    "Arpeggiator type ROOTBOUNCE requires at least 3 notes"
-                )
-            self.offsets = (
-                list(range(len(self._notes)))[1:-1] +
-                list(reversed(list(range(len(self._notes)))))[:-1]
-            )
+            if (len(self._notes) < 3):
+                raise ValueError("Arpeggiator type ROOTBOUNCE requires at least 3 notes")
+            self.offsets = list(range(len(self._notes)))[1:-1] + list(reversed(list(range(len(self._notes)))))[:-1]
             # Put a 0 in between every element of an UPDOWN pattern
-            for n in range(0, len(self.offsets) * 2 + 1, 2):
-                self.offsets.insert(n, 0)
-            if self.loop:
+            for n in range(0, len(self.offsets) * 2 + 1, 2): self.offsets.insert(n, 0)
+            if (self.loop):
                 # Remove the last three elements for a smooth loop
                 self.offsets = self.offsets[:-3]
         else:
@@ -864,9 +778,7 @@ class PArpeggiator(PStochasticPattern):
 
         pos = self.value(self.pos)
 
-        if pos < len(self.offsets) and (
-            pos < len(self._notes) or self.type > self.__LONGPATTERNS
-        ):
+        if pos < len(self.offsets) and (pos < len(self._notes) or self.type > self.__LONGPATTERNS):
             offset = self.offsets[pos]
             rv = self._notes[offset]
             self.pos = pos + 1
@@ -878,16 +790,15 @@ class PArpeggiator(PStochasticPattern):
         else:
             raise StopIteration
 
-
 class PEuclidean(Pattern):
-    """PEuclidean: Generate Euclidean rhythms.
-    Effectively tries to space <mod> events out evenly over `length` beats.
-    Events returned are either 1 or None (rest)
+    """ PEuclidean: Generate Euclidean rhythms.
+        Effectively tries to space <mod> events out evenly over `length` beats.
+        Events returned are either 1 or None (rest)
 
-    >>> p = PEuclidean(5, 8)
-    >>> p.nextn(8)
-    [1, None, 1, 1, None, 1, 1, None]
-    """
+        >>> p = PEuclidean(5, 8)
+        >>> p.nextn(8)
+        [1, None, 1, 1, None, 1, 1, None]
+        """
 
     def __init__(self, mod: int, length: int, phase: int = 0):
         self.mod = mod
@@ -896,7 +807,7 @@ class PEuclidean(Pattern):
         self.pos = phase
 
     def __repr__(self):
-        return "PEuclidean(%s, %s, %s)" % (self.mod, self.length, self.phase)
+        return ("PEuclidean(%s, %s, %s)" % (self.mod, self.length, self.phase))
 
     def __next__(self):
         length = self.value(self.length)
@@ -939,7 +850,7 @@ class PEuclidean(Pattern):
             return [a[n] + b[n] for n in range(len(b))]
 
     def _euclidean(self, length, mod):
-        """Implements Bjorklund's algorithm, described in Toussaint (2005):
+        """ Implements Bjorklund's algorithm, described in Toussaint (2005):
         http://cgm.cs.mcgill.ca/~godfried/publications/banff.pdf
         """
 
@@ -953,18 +864,8 @@ class PEuclidean(Pattern):
 
         return reduce(lambda a, b: a + b, seqs + remainder)
 
-
 class PExplorer(Pattern):
-    def __init__(
-        self,
-        density: float = 0.5,
-        length: int = 4,
-        length_min: int = 2,
-        length_max: int = 6,
-        value_max: int = 12,
-        jump_max: int = 4,
-        loop: float = None,
-    ):
+    def __init__(self, density: float = 0.5, length: int = 4, length_min: int = 2, length_max: int = 6, value_max: int = 12, jump_max: int = 4, loop: float = None):
         self.density = density
         self.length = length
         self.length_min = length_min
@@ -975,15 +876,7 @@ class PExplorer(Pattern):
         self.reset()
 
     def __repr__(self):
-        return "PExplorer(%s, %s, %s, %s, %s, %s, %s)" % (
-            self.density,
-            self.length,
-            self.length_min,
-            self.length_max,
-            self.value_max,
-            self.jump_max,
-            self.loop,
-        )
+        return ("PExplorer(%s, %s, %s, %s, %s, %s, %s)" % (self.density, self.length, self.length_min, self.length_max, self.value_max, self.jump_max, self.loop))
 
     def reset(self):
         super().reset()
@@ -1020,28 +913,10 @@ class PExplorer(Pattern):
         OP_INSERT = 6
         OP_COPY = 7
 
-        OPERATION_NAMES = [
-            "mutate",
-            "rotate",
-            "swap",
-            "split",
-            "reverse",
-            "delete",
-            "insert",
-            "copy",
-        ]
+        OPERATION_NAMES = ["mutate", "rotate", "swap", "split", "reverse", "delete", "insert", "copy"]
 
         log.debug("PExplorer: Exploring: %s" % self.values)
-        operations = [
-            OP_MUTATE,
-            OP_ROTATE,
-            OP_SWAP,
-            OP_SPLIT,
-            OP_REVERSE,
-            OP_DELETE,
-            OP_INSERT,
-            OP_COPY,
-        ]
+        operations = [OP_MUTATE, OP_ROTATE, OP_SWAP, OP_SPLIT, OP_REVERSE, OP_DELETE, OP_INSERT, OP_COPY]
 
         values = self.values
         if len(values) >= self.length_max:
@@ -1052,66 +927,63 @@ class PExplorer(Pattern):
         operation = random.choice(operations)
         log.debug("PExplorer: Selected operation: %s" % OPERATION_NAMES[operation])
 
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # MUTATE: Replace a note with another note found within the sequence.
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         if operation == OP_MUTATE:
-            filled_indices = [
-                n[0]
-                for n in filter(lambda n: n[1] is not None, list(enumerate(values)))
-            ]
+            filled_indices = [n[0] for n in filter(lambda n: n[1] is not None, list(enumerate(values)))]
             if len(filled_indices) > 0:
                 index = random.choice(filled_indices)
                 values[index] = random.randint(0, self.value_max)
 
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # ROTATE: Rotate the sequence forwards or backwards one slot.
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         elif operation == OP_ROTATE:
             if random.uniform(0, 1) < 0.1:
                 values = values[-1:] + values[:-1]
             else:
                 values = values[1:] + values[:1]
 
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # SWAP: Exchange two notes.
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         elif operation == OP_SWAP:
             indexA = random.randint(0, len(values) - 1)
             indexB = (indexA + 1) % len(values)
             values[indexA], values[indexB] = values[indexB], values[indexA]
 
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # SPLIT: Cut sequence in half and swap parts.
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         elif operation == OP_SPLIT:
             point = random.randint(1, len(values) - 1)
             values = values[:point] + values[point:]
 
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # REVERSE: Reverses the sequence.
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         elif operation == OP_REVERSE:
             values = list(reversed(values))
 
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # DELETE: Remove an item.
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         elif operation == OP_DELETE:
             index = random.randrange(len(values))
-            del values[index]
+            del (values[index])
 
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # INSERT: Insert a new value at random.
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         elif operation == OP_INSERT:
             index = random.randint(0, len(values))
             value = random.choice(list(range(self.value_max + 1)) + [None])
             values.insert(index, value)
 
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         # COPY: Duplicate a note at the subsequent index.
-        # ------------------------------------------------------------------------
+        #------------------------------------------------------------------------
         elif operation == OP_COPY:
             index = random.randint(0, len(values) - 1)
             values.insert(index + 1, values[index])
@@ -1137,14 +1009,13 @@ class PExplorer(Pattern):
         self.counter += 1
         return rv
 
-
 class PPermut(Pattern):
-    """PPermut: Generate every permutation of `count` input items.
+    """ PPermut: Generate every permutation of `count` input items.
 
-    >>> p = PPermut(PSeq([ 1, 11, 111, 1111 ]), 4)
-    >>> p.nextn(16)
-    [1, 11, 111, 1111, 1, 11, 1111, 111, 1, 111, 11, 1111, 1, 111, 1111, 11]
-    """
+        >>> p = PPermut(PSeq([ 1, 11, 111, 1111 ]), 4)
+        >>> p.nextn(16)
+        [1, 11, 111, 1111, 1, 11, 1111, 111, 1, 111, 11, 1111, 1, 111, 1111, 11]
+        """
 
     def __init__(self, input: Pattern, count: int = 8):
         if not hasattr(input, "__next__"):
@@ -1156,7 +1027,7 @@ class PPermut(Pattern):
         self.permutations = []
 
     def __repr__(self):
-        return "PPermut(%s, %s)" % (repr(self.input), self.count)
+        return ("PPermut(%s, %s)" % (repr(self.input), self.count))
 
     def reset(self):
         super().reset()
@@ -1191,20 +1062,19 @@ class PPermut(Pattern):
         self.pos += 1
         return rv
 
-
 class PPatternGeneratorAction(Pattern):
-    """PPatternGeneratorAction: Each time its pattern is exhausted, request a new pattern by calling <fn>.
+    """ PPatternGeneratorAction: Each time its pattern is exhausted, request a new pattern by calling <fn>.
 
-    >>>
-    >>>
-    """
+        >>>
+        >>>
+        """
 
     def __init__(self, fn: Callable):
         self.fn = fn
         self.pattern = self.fn()
 
     def __repr__(self):
-        return "PPatternGeneratorAction(%s)" % repr(self.fn)
+        return ("PPatternGeneratorAction(%s)" % repr(self.fn))
 
     def __next__(self):
         try:
@@ -1218,36 +1088,30 @@ class PPatternGeneratorAction(Pattern):
                 raise StopIteration
             return next(self)
 
-
 PDecisionPoint = PPatternGeneratorAction
 
-
 class PSequenceAction(Pattern):
-    """PSequenceAction: Iterate over an array, perform a function, and repeat.
+    """ PSequenceAction: Iterate over an array, perform a function, and repeat.
 
-    >>>
-    >>>
-    """
+        >>>
+        >>>
+        """
 
-    def __init__(self, lst: Iterable, fn: Callable, repeats: int = sys.maxsize):
-        self.lst = lst
-        self.list_orig = lst
-        self.sequence = PSequence(self.lst, 1)
+    def __init__(self, list: Iterable, fn: Callable, repeats: int = sys.maxsize):
+        self.list = list
+        self.list_orig = list
+        self.sequence = PSequence(self.list, 1)
         self.fn = fn
         self.repeats = repeats
         self.repeat_counter = 0
 
     def __repr__(self):
-        return "PSequenceAction(%s, %s, %s)" % (
-            repr(self.lst),
-            repr(self.fn),
-            self.repeats,
-        )
+        return ("PSequenceAction(%s, %s, %s)" % (repr(self.list), repr(self.fn), self.repeats))
 
     def reset(self):
         super().reset()
-        self.lst = self.list_orig
-        self.sequence = PSequence(self.lst, 1)
+        self.list = self.list_orig
+        self.sequence = PSequence(self.list, 1)
         self.repeat_counter = 0
 
     def __next__(self):
@@ -1258,10 +1122,9 @@ class PSequenceAction(Pattern):
             self.repeat_counter += 1
             if self.repeat_counter >= repeats:
                 raise StopIteration
-            self.lst = self.fn(self.lst)
-            self.sequence = PSequence(self.lst, 1)
+            self.list = self.fn(self.list)
+            self.sequence = PSequence(self.list, 1)
             return next(self)
-
 
 class PMetropolis(Pattern):
     def __init__(self, notes: Iterable, repeats: int, rests: int):
@@ -1272,7 +1135,7 @@ class PMetropolis(Pattern):
         self.note_offset = 0
 
     def __repr__(self):
-        return "PMetropolis(%s, %s, %s)" % (repr(self.notes), self.repeats, self.rests)
+        return ("PMetropolis(%s, %s, %s)" % (repr(self.notes), self.repeats, self.rests))
 
     def __next__(self):
         repeats = self.repeats
