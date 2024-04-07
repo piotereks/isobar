@@ -260,19 +260,19 @@ class FileOut(MidiFileOutputDevice, MidiOutputDevice):
         MidiFileOutputDevice.__init__(self, filename=filename, ticks_per_beat=ticks_per_beat, super_init=False)
         MidiOutputDevice.__init__(self, device_name=device_name, send_clock=send_clock, virtual=virtual)
 
-    def note_off(self, note=60, channel=0, track_idx=0):
+    def note_off(self, note=60, channel=0, **kwargs):
         MidiFileOutputDevice.note_off(self, note=note, channel=channel, track_idx=track_idx)
         MidiOutputDevice.note_off(self, note=note, channel=channel)
 
-    def note_on(self, note=60, velocity=64, channel=0, track_idx=0):
+    def note_on(self, note=60, velocity=64, channel=0, **kwargs):
         MidiFileOutputDevice.note_on(self, note=note, velocity=velocity, channel=channel, track_idx=track_idx)
         MidiOutputDevice.note_on(self, note=note, velocity=velocity, channel=channel)
 
-    def program_change(self, program=0, channel=0, track_idx=0):
+    def program_change(self, program=0, channel=0, **kwargs):
         MidiFileOutputDevice.program_change(self, program=program, channel=channel, track_idx=track_idx)
         MidiOutputDevice.program_change(self, program=program, channel=channel)
 
-    def control(self, control=0, value=0, channel=0, track_idx=0):
+    def control(self, control=0, value=0, channel=0, **kwargs):
         MidiFileOutputDevice.control(self, control=control, value=value, channel=channel, track_idx=track_idx)
         MidiOutputDevice.control(self, control=control, value=value, channel=channel)
 

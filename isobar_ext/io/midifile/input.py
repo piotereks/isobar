@@ -41,11 +41,9 @@ class MidiFileInputDevice:
                 msg = mido.MetaMessage('text', text=f"tempo:{int(mido.tempo2bpm(obj.tempo))}")
                 midi_track0.append(msg)
             elif isinstance(obj, MidiMessageControl):
-                timeline_inner.output_device.control(control=obj.cc, value=obj.value, channel=obj.channel,
-                                                     track_idx=track_idx)
+                timeline_inner.output_device.control(control=obj.cc, value=obj.value, channel=obj.channel)
             elif isinstance(obj, MidiMessageProgram):
-                timeline_inner.output_device.program_change(program=obj.program, channel=obj.channel,
-                                                            track_idx=track_idx)
+                timeline_inner.output_device.program_change(program=obj.program, channel=obj.channel)
             elif isinstance(obj, MidiMessagePitch):
                 timeline_inner.output_device.pitch_bend(self, pitch=obj.pitch, channel=obj.channel,
                                                         track_idx=track_idx)

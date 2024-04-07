@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import queue
@@ -30,15 +31,15 @@ class MidiInputDevice:
             device_name = os.getenv("isobar_ext_DEFAULT_MIDI_IN")
         try:
             self.midi = mido.open_input(device_name, callback=self._callback, virtual=virtual)
-        except (RuntimeError, SystemError, OSError):
-            raise DeviceNotFoundException("Could not find MIDI device")
+        except (RuntimeError, SystemError, OSError) as e:
+            raise DeviceNotFoundException("Could not find MIDI device") from e
 
         self.clock_target = clock_target
         self.queue = queue.Queue()
         self.callback = None
         self.estimated_tempo = None
         self.last_clock_time = None
-        log.info("Opened MIDI input: %s" % self.midi.name)
+        log.info(f"Opened MIDI input: {self.midi.name}")
 
     @property
     def device_name(self):
@@ -50,7 +51,7 @@ class MidiInputDevice:
         Args:
             message: A mido.Message.
         """
-        log.debug(" - MIDI message received: %s" % message)
+        log.debug(f" - MIDI message received: {message}")
 
         if message.type == 'clock':
             if self.last_clock_time is not None:
@@ -61,10 +62,7 @@ class MidiInputDevice:
                 else:
                     smoothing = 0.95
                     self.estimated_tempo = (smoothing * self.estimated_tempo) + ((1.0 - smoothing) * tick_estimate)
-                self.last_clock_time = time.time()
-            else:
-                self.last_clock_time = time.time()
-
+            self.last_clock_time = time.time()
             if self.clock_target is not None:
                 self.clock_target.tick()
 
@@ -95,7 +93,8 @@ class MidiInputDevice:
     def stop(self):
         pass
 
-    def run(self):
+    @staticmethod
+    def run():
         """
         Run indefinitely.
         """
@@ -137,10 +136,8 @@ class MidiInputDevice:
             Message: The event received, or None.
         """
         rv = None
-        try:
+        with contextlib.suppress(queue.Empty):
             rv = self.queue.get_nowait()
-        except queue.Empty:
-            pass
         return rv
 
     def close(self):
