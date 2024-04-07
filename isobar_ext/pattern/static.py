@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from . import Pattern
 
 
@@ -26,7 +27,7 @@ class Globals:
             KeyError: If the key does not exist in the globals dict.
         """
         if key not in Globals.dict:
-            raise KeyError("Global variable does not exist: %s" % key)
+            raise KeyError(f"Global variable does not exist: {key}")
         value = Globals.dict[key]
         return Pattern.value(value)
 
@@ -52,7 +53,7 @@ class Globals:
                 callback(key, value)
 
     @classmethod
-    def add_on_change_callback(self, callback):
+    def add_on_change_callback(cls, callback):
         Globals.on_change_callbacks.append(callback)
 
 
@@ -63,7 +64,7 @@ class PGlobals(Pattern):
         self.name = name
 
     def __repr__(self):
-        return "PGlobals(%s)" % repr(self.name)
+        return f"PGlobals({repr(self.name)})"
 
     def __next__(self):
         name = Pattern.value(self.name)
@@ -80,10 +81,7 @@ class PStaticPattern(Pattern):
         self.current_element_duration = None
 
     def __repr__(self):
-        return "PStaticPattern(%s, %s)" % (
-            repr(self.pattern),
-            repr(self.element_duration),
-        )
+        return f"PStaticPattern({repr(self.pattern)}, {repr(self.element_duration)})"
 
     def __next__(self):
         timeline = self.timeline
@@ -94,9 +92,9 @@ class PStaticPattern(Pattern):
         current_time = round(timeline.current_time, 5)
 
         while (
-            self.current_element_start_time is None or
-            current_time - self.current_element_start_time >=
-            self.current_element_duration
+                self.current_element_start_time is None or
+                current_time - self.current_element_start_time >=
+                self.current_element_duration
         ):
             self.value = Pattern.value(self.pattern)
             self.current_element_start_time = round(timeline.current_time, 5)
@@ -119,12 +117,4 @@ class PCurrentTime(Pattern):
         return round(beats, 5)
 
     def get_beats(self):
-        # ------------------------------------------------------------------------
-        # using the specified timeline (if given) or the currently-embedded
-        # timeline (otherwise), return the current position in current_time.
-        # ------------------------------------------------------------------------
-        timeline = self.timeline
-        if timeline:
-            return timeline.current_time
-
-        return 0
+        return timeline.current_time if (timeline := self.timeline) else 0

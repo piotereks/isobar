@@ -2,11 +2,12 @@
 MIDI control: Patterns which generate their outputs based on MIDI devices.
 """
 
-from .core import Pattern
-
-from typing import Optional
-import mido
 import os
+from typing import Optional
+
+import mido
+
+from .core import Pattern
 
 
 class isobar_extMIDIManager:
@@ -44,7 +45,7 @@ class isobar_extMIDIManager:
 
 class PMIDIControl(Pattern):
     def __init__(
-        self, control_index: int = 0, normalized: bool = False, default: int = None
+            self, control_index: int = 0, normalized: bool = False, default: int = None
     ):
         self.control_index: int = control_index
         self.value: Optional[int] = default

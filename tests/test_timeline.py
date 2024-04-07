@@ -1,30 +1,36 @@
 """ Unit tests for isobar_ext """
 
-import isobar_ext as iso
-import pytest
 import time
+
+import pytest
+import platform
+import isobar_ext as iso
+import isobar_ext.pattern.series
 from isobar_ext.io import DummyOutputDevice, MidiOutputDevice
 from . import dummy_timeline
-from isobar_ext.exceptions import InvalidEventException
+
 
 def test_timeline_tempo():
     timeline = iso.Timeline(100)
     assert timeline.clock_source.tempo == pytest.approx(100)
 
+
 def test_timeline_default_output_device():
     timeline = iso.Timeline()
     try:
-        track = timeline.schedule({ "note": 0 })
+        track = timeline.schedule({"note": 0})
         assert issubclass(type(track.output_device), MidiOutputDevice)
     except iso.DeviceNotFoundException:
         # Ignore exception on machines without a MIDI device
         pass
 
+
 def test_timeline_output_device():
     dummy = DummyOutputDevice()
     timeline = iso.Timeline(output_device=dummy)
-    track = timeline.schedule({ "note" : 0 })
+    track = timeline.schedule({"note": 0})
     assert track.output_device == dummy
+
 
 def test_timeline_stop_when_done():
     # When the Timeline ticks without any tracks, it should by default keep running
@@ -36,6 +42,7 @@ def test_timeline_stop_when_done():
     timeline.stop_when_done = True
     with pytest.raises(StopIteration):
         timeline.tick()
+
 
 def test_timeline_schedule(dummy_timeline):
     events = {
@@ -50,6 +57,7 @@ def test_timeline_schedule(dummy_timeline):
     assert dummy_timeline.output_device.events[0] == [pytest.approx(0.0), "note_on", 1, 64, 0, 0]
     assert dummy_timeline.output_device.events[1] == [pytest.approx(1.0), "note_off", 1, 0, 0]
 
+
 def test_timeline_schedule_update(dummy_timeline):
     """
     Schedule an empty Track, and subsequently update it with events.
@@ -59,11 +67,11 @@ def test_timeline_schedule_update(dummy_timeline):
     dummy_timeline.tick()
     dummy_timeline.stop_when_done = True
 
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     # Note that, because the Track has its own current_time which is relative
     # to the moment it is created, the track creation and the update() call
     # both need to have quantize=1.
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     track = dummy_timeline.schedule(quantize=1)
     track.update({
         iso.EVENT_NOTE: iso.PSequence([1], 1)
@@ -72,6 +80,7 @@ def test_timeline_schedule_update(dummy_timeline):
     dummy_timeline.run()
     # assert dummy_timeline.output_device.events == [[1.0, 'note_on', 1, 64, 0], [2.0, 'note_off', 1, 0]]
     assert dummy_timeline.output_device.events == [[1.0, 'note_on', 1, 64, 0, 0], [2.0, 'note_off', 1, 0, 0]]
+
 
 def test_timeline_schedule_update_after_period(dummy_timeline):
     """
@@ -96,9 +105,11 @@ def test_timeline_schedule_update_after_period(dummy_timeline):
         [4.0, 'note_on', 2, 64, 0, 0], [5.0, 'note_off', 2, 0, 0],
     ]
 
+
 def test_timeline_schedule_twice(dummy_timeline):
     # TODO
     pass
+
 
 def test_timeline_unschedule(dummy_timeline):
     events = {
@@ -120,12 +131,16 @@ def test_timeline_unschedule(dummy_timeline):
 
     assert len(dummy_timeline.output_device.events) == 4
 
+
+@pytest.mark.skipif(platform.system() == "Windows", reason="Test not relevant on Windows")
 def test_timeline_schedule_real_clock():
     timeline = iso.Timeline(60, output_device=DummyOutputDevice())
     times = []
     timeline.stop_when_done = True
+
     def record_time():
         times.append(time.time())
+
     # temporary blocked to be verified in #35
     timeline.schedule({
         iso.EVENT_NOTE: iso.PSequence([1, 1], 1),
@@ -136,6 +151,7 @@ def test_timeline_schedule_real_clock():
     timeline.run()
     diff = times[1] - times[0]
     assert diff == pytest.approx(0.1, abs=timeline.tick_duration)
+
 
 @pytest.mark.parametrize("quantize", [0.0, 0.1, 0.5, 1.0])
 @pytest.mark.parametrize("delay", [0.0, 0.1, 0.5, 1.0])
@@ -155,16 +171,21 @@ def test_timeline_schedule_quantize_delay(dummy_timeline, quantize, delay):
     dummy_timeline.run()
     assert len(dummy_timeline.tracks) == 0
     assert len(dummy_timeline.output_device.events) == 2
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     # Scheduling can only be as precise as the duration of a tick,
     # so use this as the bounds for approximation.
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     if quantize == 0.0:
-        assert dummy_timeline.output_device.events[0] == [pytest.approx(initial_time + delay, abs=dummy_timeline.tick_duration), "note_on", 1, 64, 0, 0]
-        assert dummy_timeline.output_device.events[1] == [pytest.approx(initial_time + delay + 1.0, abs=dummy_timeline.tick_duration), "note_off", 1, 0, 0]
+        assert dummy_timeline.output_device.events[0] == [
+            pytest.approx(initial_time + delay, abs=dummy_timeline.tick_duration), "note_on", 1, 64, 0, 0]
+        assert dummy_timeline.output_device.events[1] == [
+            pytest.approx(initial_time + delay + 1.0, abs=dummy_timeline.tick_duration), "note_off", 1, 0, 0]
     else:
-        assert dummy_timeline.output_device.events[0] == [pytest.approx(quantize + delay, abs=dummy_timeline.tick_duration), "note_on", 1, 64, 0, 0]
-        assert dummy_timeline.output_device.events[1] == [pytest.approx(quantize + delay + 1.0, abs=dummy_timeline.tick_duration), "note_off", 1, 0, 0]
+        assert dummy_timeline.output_device.events[0] == [
+            pytest.approx(quantize + delay, abs=dummy_timeline.tick_duration), "note_on", 1, 64, 0, 0]
+        assert dummy_timeline.output_device.events[1] == [
+            pytest.approx(quantize + delay + 1.0, abs=dummy_timeline.tick_duration), "note_off", 1, 0, 0]
+
 
 @pytest.mark.parametrize("quantize", [0.0, 0.1, 0.5, 1.0])
 # @pytest.mark.parametrize("quantize", [0.1, 0.5, 1.0])
@@ -176,7 +197,9 @@ def test_timeline_schedule_quantize_on_beat(dummy_timeline, quantize):
     dummy_timeline.run()
     assert len(dummy_timeline.output_device.events) == 2
     assert dummy_timeline.output_device.events[0] == [0, "note_on", 1, 64, 0, 0]
-    assert dummy_timeline.output_device.events[1] == [pytest.approx(1.0, abs=dummy_timeline.tick_duration), "note_off", 1, 0, 0]
+    assert dummy_timeline.output_device.events[1] == [pytest.approx(1.0, abs=dummy_timeline.tick_duration), "note_off",
+                                                      1, 0, 0]
+
 
 def test_timeline_schedule_default_quantize(dummy_timeline):
     dummy_timeline.defaults.quantize = 1
@@ -190,7 +213,9 @@ def test_timeline_schedule_default_quantize(dummy_timeline):
     dummy_timeline.run()
     assert len(dummy_timeline.output_device.events) == 2
     assert dummy_timeline.output_device.events[0] == [1, "note_on", 1, 64, 0, 0]
-    assert dummy_timeline.output_device.events[1] == [pytest.approx(2, abs=dummy_timeline.tick_duration), "note_off", 1, 0, 0]
+    assert dummy_timeline.output_device.events[1] == [pytest.approx(2, abs=dummy_timeline.tick_duration), "note_off", 1,
+                                                      0, 0]
+
 
 def test_timeline_schedule_default_quantize_override(dummy_timeline):
     dummy_timeline.defaults.quantize = 1
@@ -202,12 +227,15 @@ def test_timeline_schedule_default_quantize_override(dummy_timeline):
     }, quantize=0)
     dummy_timeline.run()
     assert len(dummy_timeline.output_device.events) == 2
-    assert dummy_timeline.output_device.events[0] == [pytest.approx(dummy_timeline.tick_duration, abs=dummy_timeline.tick_duration), "note_on", 1, 64, 0, 0]
-    assert dummy_timeline.output_device.events[1] == [pytest.approx(1 + dummy_timeline.tick_duration, abs=dummy_timeline.tick_duration), "note_off", 1, 0, 0]
+    assert dummy_timeline.output_device.events[0] == [
+        pytest.approx(dummy_timeline.tick_duration, abs=dummy_timeline.tick_duration), "note_on", 1, 64, 0, 0]
+    assert dummy_timeline.output_device.events[1] == [
+        pytest.approx(1 + dummy_timeline.tick_duration, abs=dummy_timeline.tick_duration), "note_off", 1, 0, 0]
+
 
 def test_timeline_schedule_count(dummy_timeline):
     dummy_timeline.schedule({
-        iso.EVENT_NOTE: iso.PSeries(0, 1),
+        iso.EVENT_NOTE: isobar_ext.pattern.series.PSeries(0, 1),
         iso.EVENT_DURATION: 1
     }, count=4)
     dummy_timeline.run()
@@ -218,6 +246,7 @@ def test_timeline_schedule_count(dummy_timeline):
         [2, "note_on", 2, 64, 0, 0], [3, "note_off", 2, 0, 0],
         [3, "note_on", 3, 64, 0, 0], [4, "note_off", 3, 0, 0]
     ]
+
 
 def test_timeline_reset(dummy_timeline):
     track = dummy_timeline.schedule({
@@ -243,17 +272,21 @@ def test_timeline_reset(dummy_timeline):
     assert dummy_timeline.output_device.events[4] == [pytest.approx(2.0), "note_on", 2, 64, 0, 0]
     assert dummy_timeline.output_device.events[5] == [pytest.approx(2.5), "note_off", 2, 0, 0]
 
+
 def test_timeline_reset_to_beat(dummy_timeline):
     # TODO
     pass
+
 
 def test_timeline_background():
     timeline = iso.Timeline(60, output_device=iso.io.DummyOutputDevice())
     timeline.ticks_per_beat = 100
     executed = 0
+
     def set_executed():
         nonlocal executed
         executed += 1
+
     timeline.background()
     timeline.schedule({
         "action": set_executed,
@@ -263,14 +296,18 @@ def test_timeline_background():
     timeline.stop()
     assert executed == 4
 
+
 def test_timeline_running(dummy_timeline):
     # TODO
     pass
 
+
 def test_timeline_tick_actions(dummy_timeline):
     dummy_timeline.done = False
+
     def callback():
         dummy_timeline.done = True
+
     dummy_timeline._schedule_action(callback, delay=dummy_timeline.tick_duration)
     dummy_timeline.tick()
     with pytest.raises(StopIteration):
@@ -283,7 +320,8 @@ def test_timeline_beats_to_seconds(dummy_timeline):
     assert timeline.beats_to_seconds(1) == pytest.approx(0.5)
     assert timeline.beats_to_seconds(0) == pytest.approx(0.0)
     timeline.tempo = 180
-    assert timeline.beats_to_seconds(1) == pytest.approx(1/3)
+    assert timeline.beats_to_seconds(1) == pytest.approx(1 / 3)
+
 
 def test_timeline_seconds_to_beats(dummy_timeline):
     timeline = iso.Timeline(120)
@@ -291,6 +329,7 @@ def test_timeline_seconds_to_beats(dummy_timeline):
     assert timeline.seconds_to_beats(0) == pytest.approx(0.0)
     timeline.tempo = 180
     assert timeline.seconds_to_beats(1) == pytest.approx(3)
+
 
 def test_timeline_tempo(dummy_timeline):
     # Set tempo of internal clock

@@ -50,4 +50,3 @@ class MidiNote:
         if value is not None and value < 0:
             raise ValueError("Invalid duration value. Duration must be a non-negative number.")
         self._duration = value
-

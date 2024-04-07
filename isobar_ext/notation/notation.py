@@ -1,4 +1,5 @@
 import re
+
 from ..pattern.sequence import PSequence
 
 
@@ -19,15 +20,13 @@ def _parser_get_next_token(string: str):
     Return the next token in the string.
     This may be a number (integer/float) or a note name (e.g. c#4).
     """
-    note_pattern = r"(-?[0-9]+(\.[0-9]+)?|[a-g]#?[0-9])\b"
     if string[0] in "[]":
         return string[0]
+    note_pattern = r"(-?[0-9]+(\.[0-9]+)?|[a-g]#?[0-9])\b"
+    if match := re.match(note_pattern, string):
+        return match[1]
     else:
-        match = re.match(note_pattern, string)
-        if match:
-            return match.group(1)
-        else:
-            raise ValueError("Invalid character in notation: %s" % string)
+        raise ValueError(f"Invalid character in notation: {string}")
 
 
 def _parser_token_to_value(token: str):
@@ -49,7 +48,7 @@ def parse_notation(string: str):
 
     results in
 
-        seq([1, 2, seq([10, 11]), seq([20, seq([30, 31, 32])])])])
+        seq([1, 2, seq([10, 11]), seq([20, seq([30, 31, 32])])])
 
     Implementation of a push-down automaton, thanks to:
     Source: https://stackoverflow.com/questions/4284991/parsing-nested-parentheses-in-python-grab-content-by-level
@@ -74,8 +73,8 @@ def parse_notation(string: str):
 
             if len(string) == 0:
                 break
-    except IndexError:
-        raise ValueError("Notation error: parenthesis mismatch")
+    except IndexError as e:
+        raise ValueError("Notation error: parenthesis mismatch") from e
 
     if depth > 0:
         raise ValueError("Notation error: parenthesis mismatch")

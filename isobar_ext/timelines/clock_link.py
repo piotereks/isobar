@@ -1,13 +1,14 @@
-from ..constants import (   # noqa: F401
+import os
+import sys
+import time
+from typing import Any
+
+from .clock import Clock
+from ..constants import (  # noqa: F401
     DEFAULT_TEMPO,
     DEFAULT_TICKS_PER_BEAT,
     MIN_CLOCK_DELAY_WARNING_TIME,
 )
-from .clock import Clock
-import time
-import sys
-import os
-from typing import Any
 
 try:
     lib_dir = "auxiliary/lib"
@@ -24,10 +25,10 @@ except ModuleNotFoundError as e:
 
 class AbletonLinkClock(Clock):
     def __init__(
-        self,
-        clock_target: Any = None,
-        tempo: float = DEFAULT_TEMPO,
-        ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
+            self,
+            clock_target: Any = None,
+            tempo: float = DEFAULT_TEMPO,
+            ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
     ):
         self.link_client = link.Link(120)
         self.link_client.enabled = True
@@ -36,7 +37,8 @@ class AbletonLinkClock(Clock):
 
         super().__init__(clock_target, tempo, ticks_per_beat)
 
-    def tempo_changed_callback(self, tempo):
+    @staticmethod
+    def tempo_changed_callback(tempo):
         print("tempo changed: %.2f" % tempo)
 
     def run(self):

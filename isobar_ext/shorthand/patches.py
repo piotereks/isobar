@@ -1,20 +1,21 @@
-from signalflow import *  # noqa: F403
 import os
+
+from signalflow import *  # noqa: F403
 
 
 class SegmentPlayerPatch(Patch):
     def __init__(
-        self,
-        buf,
-        onsets,
-        volume=0.5,
-        hpf=10,
-        lpf=20000,
-        delay=0.0,
-        feedback=0.0,
-        pan=0.0,
-        index=0,
-        rate=1.0,
+            self,
+            buf,
+            onsets,
+            volume=0.5,
+            hpf=10,
+            lpf=20000,
+            delay=0.0,
+            feedback=0.0,
+            pan=0.0,
+            index=0,
+            rate=1.0,
     ):
         super().__init__()
         index = self.add_input("index", index)

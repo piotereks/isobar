@@ -1,5 +1,5 @@
-import random
 import copy
+import random
 
 
 class Chord:
@@ -7,7 +7,9 @@ class Chord:
 
     dict = {}
 
-    def __init__(self, intervals=[], root=0, name="unnamed chord"):
+    def __init__(self, intervals=None, root=0, name="unnamed chord"):
+        if intervals is None:
+            intervals = []
         self.intervals = intervals
         self.name = name
         self.root = root
@@ -15,15 +17,14 @@ class Chord:
             Chord.dict[name] = self
 
     def __str__(self):
-        return "%s [%s]" % (self.name, ",".join(str(n) for n in self.semitones))
+        return f'{self.name} [{",".join(str(n) for n in self.semitones)}]'
 
     @property
     def semitones(self):
-        semitones = [self.root] + [
-            sum(self.intervals[0: n + 1], self.root)
+        return [self.root] + [
+            sum(self.intervals[: n + 1], self.root)
             for n in range(len(self.intervals))
         ]
-        return semitones
 
     @staticmethod
     def byname(name):

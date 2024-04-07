@@ -1,12 +1,15 @@
 """ Unit tests for Track """
 
-import isobar_ext as iso
 import pytest
+
+import isobar_ext as iso
 from . import dummy_timeline
+
 
 @pytest.fixture()
 def dummy_track():
     return iso.Track(output_device=iso.io.DummyOutputDevice())
+
 
 def test_track(dummy_timeline):
     track = iso.Track(dummy_timeline)
@@ -16,8 +19,9 @@ def test_track(dummy_timeline):
     track.tick()
     assert track.is_finished
 
+
 def test_track_update(dummy_timeline):
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     # Test that a track can be updated properly.
     #  - Track should continue playing its current events until precisely the
     #    quantized time of the update.
@@ -26,7 +30,7 @@ def test_track_update(dummy_timeline):
     #    set its `is_finished` flag and terminate.
     #  - Should also catch the case in which two updates are scheduled for the same
     #    tick, in which the last update takes precedence
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     assert len(dummy_timeline.tracks) == 0
     track = dummy_timeline.schedule({
         iso.EVENT_NOTE: iso.PSequence([50], 4),

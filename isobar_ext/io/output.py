@@ -1,3 +1,4 @@
+import itertools
 import logging
 
 log = logging.getLogger(__name__)
@@ -27,9 +28,8 @@ class OutputDevice:
         pass
 
     def all_notes_off(self):
-        for channel in range(16):
-            for note_index in range(128):
-                self.note_off(note_index, channel=channel)
+        for channel, note_index in itertools.product(range(16), range(128)):
+            self.note_off(note_index, channel=channel)
 
     def control(self, control=0, value=0, channel=0, track_idx=0):
         pass
@@ -39,4 +39,3 @@ class OutputDevice:
 
     def create(self, patch_spec, patch_params, output=None):
         pass
-

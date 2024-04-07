@@ -1,7 +1,7 @@
-from ..output import OutputDevice
-
-import logging
 import inspect
+import logging
+
+from ..output import OutputDevice
 
 log = logging.getLogger(__name__)
 

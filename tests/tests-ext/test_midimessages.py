@@ -1,8 +1,5 @@
-from unittest.mock import Mock
-
 import pytest
 
-from isobar_ext.io.midifile.input import MidiFileInputDevice
 from isobar_ext.io.midimessages import (
     MidiMetaMessageTempo, MidiMetaMessageKey, MidiMetaMessageTimeSig,
     MidiMetaMessageTrackName, MidiMetaMessageMidiPort, MidiMetaMessageEndTrack, MidiMessageControl,
@@ -286,7 +283,6 @@ def test_midi_message_poly(test_id, channel, note, value, location, time, track_
         assert midi_poly_message.track_idx == track_idx
 
 
-
 @pytest.mark.parametrize("test_id, channel, value, location, time, track_idx", [
     ("happy_path_1", 1, 100, 2.0, 0, 0),
     ("happy_path_2", 15, 80, 4.5, 10, 1),
@@ -321,8 +317,6 @@ def test_midi_message_after(test_id, channel, value, location, time, track_idx):
         assert midi_after_message.location == location
         assert midi_after_message.time == time
         assert midi_after_message.track_idx == track_idx
-
-
 
 
 @pytest.mark.parametrize("test_id, name, location, time, track_idx", [
@@ -396,6 +390,7 @@ def test_midi_meta_message_midi_port(test_id, port, location, time, track_idx):
         assert meta_message.port == port
         assert meta_message.time == time
         assert meta_message.type == 'midi_port'
+
 
 @pytest.mark.parametrize(
     "test_id, location, time, track_idx",

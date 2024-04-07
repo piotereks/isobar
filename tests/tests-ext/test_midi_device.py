@@ -1,6 +1,6 @@
 import platform
 from pathlib import Path
-
+import platform
 import pytest
 
 from isobar_ext import FileOut, MidiFileOutputDevice
@@ -55,11 +55,13 @@ def test_get_channel_track():
     assert test_midi_out_device.channel_track == [2, 3, 4, 5, 5]
     assert test_midi_out_device.tgt_track_idxs == [1, 2, 2, 1, 2]
 
+
 # from isobar_ext import *
 # import mido
 # from tracker.app.isobar_fixes import *
 # from tracker.app.midi_dev import *
 
+@pytest.mark.skipif(platform.system() == "Windows", reason="Test can run only single")
 @pytest.mark.skipif(platform.system() == "Linux", reason="Test not supported on Linux")
 def test_wrk_midi_out():
     """

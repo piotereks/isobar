@@ -1,13 +1,14 @@
-import pytest
-import isobar_ext as iso
-import mido
 import os
+
+import pytest
+
+import isobar_ext as iso
 
 IN_CI_CD = "GITHUB_ACTION" in os.environ
 
+
 @pytest.fixture()
 def dummy_timeline():
-
     # def mid_meta_message(msg: mido.MetaMessage = None, *args, **kwargs):
     #     # return None
     #     track_idx = min(kwargs.pop('track_idx', 0), len(dummy_timeline.output_device.miditrack) - 1)

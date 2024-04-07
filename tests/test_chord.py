@@ -4,6 +4,7 @@ Unit tests for Chord
 
 import isobar_ext as iso
 
+
 def test_chord():
     chord = iso.Chord([3, 4, 3])
     assert chord.intervals == [3, 4, 3]

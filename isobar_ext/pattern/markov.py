@@ -1,9 +1,10 @@
 from __future__ import annotations
-from .chance import PStochasticPattern
-from .core import Pattern
 
 import os
 from typing import Iterable
+
+from .chance import PStochasticPattern
+from .core import Pattern
 
 
 class PMarkov(PStochasticPattern):

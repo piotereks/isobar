@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import copy
 import inspect
 from dataclasses import dataclass
@@ -24,20 +25,15 @@ class NoteOffEvent:
     timestamp: float
     note: int
     channel: int
-    track_idx : int
+    track_idx: int
 
 
 def get_track_idx(event_obj):
-    # if True:
-    #     return None
-    track_idx = 0
     if isinstance(event_obj, (dict, PDict)):
         if trk_idx := event_obj.get('args', {}).get('track_idx', None):
-            if isinstance(trk_idx, PConstant):
-                return trk_idx.constant
-            else:
-                return trk_idx
-    return track_idx
+            return trk_idx.constant if isinstance(trk_idx, PConstant) else trk_idx
+    return 0
+
 
 class Track:
     def __init__(
@@ -52,7 +48,6 @@ class Track:
         """
         Args:
             timeline: The Timeline object that the track inhabits
-            events: A dict, a PDict, or a Pattern that generates dicts.
             max_event_count: Optionally, the maximum number of events that will be executed. \
                              The Track will finish automatically once this number of events is complete.
             interpolate: Optional interpolation to impose on values, particularly for control tracks.
@@ -88,7 +83,7 @@ class Track:
         self.remove_when_done: bool = remove_when_done
         self.on_event_callbacks: list[Callable] = []
 
-    def __getattr__(self, item, default = None):
+    def __getattr__(self, item, default=None):
         # return self.event_stream[item]
         return getattr(self.event_stream, 'item', default)
 
@@ -193,8 +188,6 @@ class Track:
         """Tick duration, in beats."""
         return self.timeline.tick_duration
 
-
-
     def process_note_offs(self):
         # ----------------------------------------------------------------------
         # Process note_offs before we play the next note, else a repeated note
@@ -209,7 +202,10 @@ class Track:
         # else:
         #     track_idx = 0
         # if getattr(self, 'track_idx', None) is None:
-        if not hasattr(self, 'track_idx') or getattr(self, 'track_idx', None) == None:
+        if (
+                not hasattr(self, 'track_idx')
+                or getattr(self, 'track_idx', None) is None
+        ):
             track_idx = get_track_idx(self.event_stream)
             self.track_idx = track_idx
         else:
@@ -240,13 +236,16 @@ class Track:
         #     if self.event_stream.get('args', {}).get('track_idx', None) is not None:
         #         track_idx = self.event_stream['args']['track_idx'].constant
         # if getattr(self, 'track_idx', None) is None:
-        if not hasattr(self, 'track_idx') or getattr(self, 'track_idx', None) == None:
+        if (
+                not hasattr(self, 'track_idx')
+                or getattr(self, 'track_idx', None) is None
+        ):
             track_idx = get_track_idx(self.event_stream)
             self.track_idx = track_idx
         else:
             track_idx = self.track_idx
 
-        for n, note in enumerate(self.note_offs[:]):
+        for note in self.note_offs[:]:
             if round(note.timestamp, 8) <= round(self.current_time, 8):
                 index = note.note
                 channel = note.channel
@@ -282,77 +281,80 @@ class Track:
                     )
                     self.perform_event(interpolated_event)
                 except StopIteration:
-                    is_first_event = False
-                    if self.next_event is None:
-                        # --------------------------------------------------------------------------------
-                        # The current and next events are needed to perform interpolation.
-                        # No events have yet been obtained, so query the current and next events off
-                        # the stack.
-                        # --------------------------------------------------------------------------------
-                        self.next_event = self.get_next_event()
-                        is_first_event = True
-
-                    self.current_event = self.next_event
-                    self.next_event = self.get_next_event()
-
-                    # --------------------------------------------------------------------------------
-                    # Special case to handle zero-duration events: continue to pop new
-                    # events from the pattern.
-                    # --------------------------------------------------------------------------------
-                    while (
-                            int(self.current_event.duration * self.timeline.ticks_per_beat) <=
-                            0
-                    ):
-                        self.current_event = self.next_event
-                        self.next_event = self.get_next_event()
-
-                    if (
-                            self.current_event.type != EVENT_TYPE_CONTROL or
-                            self.next_event.type != EVENT_TYPE_CONTROL
-                    ):
-                        raise InvalidEventException(
-                            "Interpolation is only valid for control event"
-                        )
-
-                    interpolating_event_fields = copy.copy(self.current_event.fields)
-                    duration = self.current_event.duration
-                    duration_ticks = duration * self.timeline.ticks_per_beat
-                    for key, value in self.current_event.fields.items():
-                        # --------------------------------------------------------------------------------
-                        # Create a new interpolating_event with patterns for each parameter to
-                        # interpolate.
-                        # --------------------------------------------------------------------------------
-                        if key == EVENT_TYPE or key == EVENT_DURATION:
-                            continue
-                        if type(value) is not float and type(value) is not int:
-                            continue
-                        interpolating_event_fields[key] = PInterpolate(
-                            PSequence(
-                                [
-                                    self.current_event.fields[key],
-                                    self.next_event.fields[key],
-                                ],
-                                1,
-                            ),
-                            duration_ticks,
-                            self.interpolate,
-                        )
-
-                    self.interpolating_event = PDict(interpolating_event_fields)
-                    if not is_first_event:
-                        next(self.interpolating_event)
-                    event = Event(
-                        next(self.interpolating_event),
-                        self.timeline.defaults,
-                        track=self,
-                    )
-                    self.perform_event(event)
-
+                    self._extracted_from_tick_65()
         except StopIteration:
             if len(self.note_offs) == 0:
                 self.is_finished = True
 
         self.current_time += self.tick_duration
+
+    # TODO Rename this here and in `tick`
+    def _extracted_from_tick_65(self):
+        is_first_event = False
+        if self.next_event is None:
+            # --------------------------------------------------------------------------------
+            # The current and next events are needed to perform interpolation.
+            # No events have yet been obtained, so query the current and next events off
+            # the stack.
+            # --------------------------------------------------------------------------------
+            self.next_event = self.get_next_event()
+            is_first_event = True
+
+        self.current_event = self.next_event
+        self.next_event = self.get_next_event()
+
+        # --------------------------------------------------------------------------------
+        # Special case to handle zero-duration events: continue to pop new
+        # events from the pattern.
+        # --------------------------------------------------------------------------------
+        while (
+                int(self.current_event.duration * self.timeline.ticks_per_beat) <=
+                0
+        ):
+            self.current_event = self.next_event
+            self.next_event = self.get_next_event()
+
+        if (
+                self.current_event.type != EVENT_TYPE_CONTROL or
+                self.next_event.type != EVENT_TYPE_CONTROL
+        ):
+            raise InvalidEventException(
+                "Interpolation is only valid for control event"
+            )
+
+        interpolating_event_fields = copy.copy(self.current_event.fields)
+        duration = self.current_event.duration
+        duration_ticks = duration * self.timeline.ticks_per_beat
+        for key, value in self.current_event.fields.items():
+            # --------------------------------------------------------------------------------
+            # Create a new interpolating_event with patterns for each parameter to
+            # interpolate.
+            # --------------------------------------------------------------------------------
+            if key in [EVENT_TYPE, EVENT_DURATION]:
+                continue
+            if type(value) is not float and type(value) is not int:
+                continue
+            interpolating_event_fields[key] = PInterpolate(
+                PSequence(
+                    [
+                        self.current_event.fields[key],
+                        self.next_event.fields[key],
+                    ],
+                    1,
+                ),
+                duration_ticks,
+                self.interpolate,
+            )
+
+        self.interpolating_event = PDict(interpolating_event_fields)
+        if not is_first_event:
+            next(self.interpolating_event)
+        event = Event(
+            next(self.interpolating_event),
+            self.timeline.defaults,
+            track=self,
+        )
+        self.perform_event(event)
 
     def reset_to_beat(self):
         """
@@ -368,11 +370,8 @@ class Track:
         self.next_event_time = self.current_time
 
         for pattern in self.event_stream.values():
-            try:
+            with contextlib.suppress(AttributeError):
                 pattern.reset()
-            except AttributeError:
-                # Event stream may contain constant values, in which case no reset is needed.
-                pass
 
     def get_next_event(self) -> Event:
         """
@@ -630,17 +629,18 @@ class Track:
         #
         #     track_idx = self.event_stream['args']['track_idx'].constant
         # if getattr(self, 'track_idx', None) is None:
-        if not hasattr(self, 'track_idx') or getattr(self, 'track_idx', None) == None:
+        if (
+                not hasattr(self, 'track_idx')
+                or getattr(self, 'track_idx', None) is None
+        ):
             track_idx = get_track_idx(self.event_stream)
             self.track_idx = track_idx
         else:
             track_idx = self.track_idx
         # if not (track_idx := get_track_idx(self.event_stream)):
-        if track_idx is None:
-            if getattr(event, 'fields', {}).get('args', {}).get('track_idx') is not None:
-            # if event.fields.get('args').get('track_idx') is not None:
-                track_idx = event.fields['args']['track_idx']
-                self.track_idx = track_idx
+        if track_idx is None and getattr(event, 'fields', {}).get('args', {}).get('track_idx') is not None:
+            track_idx = event.fields['args']['track_idx']
+            self.track_idx = track_idx
         # else:
         #     track_idx = 0
 
@@ -655,33 +655,19 @@ class Track:
         if event.type == EVENT_TYPE_ACTION:
             try:
                 fn = event.action
-                try:
+                with contextlib.suppress(ValueError):
                     fn_params = inspect.signature(fn).parameters
                     for key in event.args.keys():
                         if key not in fn_params:
-                            raise Exception(
-                                "Named argument not found in callback args: %s" % key
-                            )
-                except ValueError:
-                    # ------------------------------------------------------------------------
-                    # inspect.signature does not work on cython/pybind11 bindings, and
-                    # raises a ValueError. In these cases, simply pass the arguments
-                    # without validation.
-                    # ------------------------------------------------------------------------
-                    pass
+                            raise Exception(f"Named argument not found in callback args: {key}")
                 event.action(**event.args)
             except StopIteration:
                 raise StopIteration()
             except Exception as e:
-                print("Exception when handling scheduled action: %s" % e)
+                print(f"Exception when handling scheduled action: {e}")
                 import traceback
 
                 traceback.print_exc()
-                pass
-
-        # ------------------------------------------------------------------------
-        # Control: Send a control value
-        # ------------------------------------------------------------------------
         elif event.type == EVENT_TYPE_CONTROL:
             log.debug(
                 "Control (channel %d, control %d, value %d)",
@@ -691,9 +677,6 @@ class Track:
             )
             self.output_device.control(event.control, event.value, event.channel, track_idx=track_idx)
 
-        # ------------------------------------------------------------------------
-        # Program change
-        # ------------------------------------------------------------------------
         elif event.type == EVENT_TYPE_PROGRAM_CHANGE:
             log.debug(
                 "Program change (channel %d, program %d)",
@@ -702,32 +685,21 @@ class Track:
             )
             self.output_device.program_change(event.program_change, event.channel, track_idx=track_idx)
 
-        # ------------------------------------------------------------------------
-        # address: Send a value to an OSC endpoint
-        # ------------------------------------------------------------------------
         elif event.type == EVENT_TYPE_OSC:
             self.output_device.send(event.osc_address, event.osc_params, track_idx=track_idx)
 
-        # ------------------------------------------------------------------------
-        # SuperCollider synth
-        # ------------------------------------------------------------------------
         elif event.type == EVENT_TYPE_SUPERCOLLIDER:
             self.output_device.create(event.synth_name, event.synth_params)
 
-        # ------------------------------------------------------------------------
-        # SignalFlow patch
-        # ------------------------------------------------------------------------
         elif event.type == EVENT_TYPE_PATCH_CREATE:
             # ------------------------------------------------------------------------
             # Action: Create patch
             # ------------------------------------------------------------------------
             if not hasattr(self.output_device, "create"):
                 raise InvalidEventException(
-                    "Device %s does not support this kind of event" % self.output_device
+                    f"Device {self.output_device} does not support this kind of event"
                 )
-            params = dict(
-                (key, Pattern.value(value)) for key, value in event.params.items()
-            )
+            params = {key: Pattern.value(value) for key, value in event.params.items()}
             if hasattr(event, "note"):
                 notes = event.note if hasattr(event.note, "__iter__") else [event.note]
 
@@ -736,14 +708,13 @@ class Track:
                         # TODO: Should use None to denote rests
                         params["frequency"] = midi_note_to_frequency(note)
                         self.output_device.create(
-                            event.patch, params, output=event.output, track_idx=track_idx
+                            # event.patch, params, output=event.output, track_idx=track_idx
+                            event.patch, params, output=event.output
                         )
             else:
                 self.output_device.create(event.patch, params, output=event.output, track_idx=track_idx)
 
-        elif (
-                event.type == EVENT_TYPE_PATCH_SET or event.type == EVENT_TYPE_PATCH_TRIGGER
-        ):
+        elif event.type in [EVENT_TYPE_PATCH_SET, EVENT_TYPE_PATCH_TRIGGER]:
             # ------------------------------------------------------------------------
             # Action: Set patch's input(s) and/or trigger an event
             # ------------------------------------------------------------------------
@@ -760,19 +731,13 @@ class Track:
                 # ------------------------------------------------------------------------
                 if not hasattr(self.output_device, "trigger"):
                     raise InvalidEventException(
-                        "Device %s does not support this kind of event"
-                        % self.output_device
+                        f"Device {self.output_device} does not support this kind of event"
                     )
-                params = dict(
-                    (key, Pattern.value(value)) for key, value in event.params.items()
-                )
+                params = {key: Pattern.value(value) for key, value in event.params.items()}
                 self.output_device.trigger(
                     event.patch, event.trigger_name, event.trigger_value, track_idx=track_idx
                 )
 
-        # ------------------------------------------------------------------------
-        # Note: Classic MIDI note
-        # ------------------------------------------------------------------------
         elif event.type == EVENT_TYPE_NOTE:
             # ----------------------------------------------------------------------
             # event: Certain devices (eg Socket IO) handle generic events,
@@ -803,50 +768,45 @@ class Track:
                 self.output_device.event(d)
                 return
 
+            # TODO: pythonic duck-typing approach might be better
+            # TODO: doesn't handle arrays of amp, channel event, etc
+            notes = event.note if hasattr(event.note, "__iter__") else [event.note]
+
             # ----------------------------------------------------------------------
-            # note_on: Standard (MIDI) type of device
+            # Allow for arrays of amp, gate etc, to handle chords properly.
+            # Caveat: Things will go horribly wrong for an array of amp/gate event
+            # shorter than the number of notes.
             # ----------------------------------------------------------------------
-            # if type(event.amplitude) is tuple or event.amplitude > 0:
-            if type(event.amplitude) is tuple or True:
-                # TODO: pythonic duck-typing approach might be better
-                # TODO: doesn't handle arrays of amp, channel event, etc
-                notes = event.note if hasattr(event.note, "__iter__") else [event.note]
+            for index, note in enumerate(notes):
+                amp = (
+                    event.amplitude[index]
+                    if isinstance(event.amplitude, tuple)
+                    else event.amplitude
+                )
+                channel = (
+                    event.channel[index]
+                    if isinstance(event.channel, tuple)
+                    else event.channel
+                )
+                gate = (
+                    event.gate[index]
+                    if isinstance(event.gate, tuple)
+                    else event.gate
+                )
+                # TODO: Add an EVENT_SUSTAIN that allows absolute note lengths to be specified
 
-                # ----------------------------------------------------------------------
-                # Allow for arrays of amp, gate etc, to handle chords properly.
-                # Caveat: Things will go horribly wrong for an array of amp/gate event
-                # shorter than the number of notes.
-                # ----------------------------------------------------------------------
-                for index, note in enumerate(notes):
-                    amp = (
-                        event.amplitude[index]
-                        if isinstance(event.amplitude, tuple)
-                        else event.amplitude
-                    )
-                    channel = (
-                        event.channel[index]
-                        if isinstance(event.channel, tuple)
-                        else event.channel
-                    )
-                    gate = (
-                        event.gate[index]
-                        if isinstance(event.gate, tuple)
-                        else event.gate
-                    )
-                    # TODO: Add an EVENT_SUSTAIN that allows absolute note lengths to be specified
+                # if (amp is not None and amp > 0) and (gate is not None and gate > 0):
+                if (amp is not None) and (gate is not None):
+                    self.output_device.note_on(note, amp, channel, track_idx=track_idx)
 
-                    # if (amp is not None and amp > 0) and (gate is not None and gate > 0):
-                    if (amp is not None) and (gate is not None):
-                        self.output_device.note_on(note, amp, channel, track_idx=track_idx)
-
-                        note_dur = event.duration * gate
-                        note_off_time = self.current_time + note_dur
-                        note_off = NoteOffEvent(note_off_time, note, channel, track_idx=track_idx)
-                        self.note_offs.append(note_off)
-                if event.pitchbend is not None:
-                    self.output_device.pitch_bend(event.pitchbend, channel)
+                    note_dur = event.duration * gate
+                    note_off_time = self.current_time + note_dur
+                    note_off = NoteOffEvent(note_off_time, note, channel, track_idx=track_idx)
+                    self.note_offs.append(note_off)
+            if event.pitchbend is not None:
+                self.output_device.pitch_bend(event.pitchbend, channel)
         else:
-            raise InvalidEventException("Invalid event type: %s" % event.type)
+            raise InvalidEventException(f"Invalid event type: {event.type}")
 
         if self.timeline.on_event_callback:
             self.timeline.on_event_callback(self, event)

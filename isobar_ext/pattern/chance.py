@@ -1,9 +1,11 @@
 from __future__ import annotations
-import sys
+
 import copy
 import random
+import sys
 
 from .core import Pattern
+from .series import PSeries
 from ..util import wnchoice, scale_lin_exp
 
 
@@ -56,29 +58,23 @@ class PWhite(PStochasticPattern):
     [3.6747936220022082, 0.61313530428271923, 9.1515368696591555, ... 6.2963694390145974 ]
     """
 
-    def __init__(self, min: float = 0.0, max: float = 1.0):
+    def __init__(self, v_min: float = 0.0, v_max: float = 1.0):
         super().__init__()
 
-        self.min = min
-        self.max = max
+        self.min = v_min
+        self.max = v_max
 
     def __repr__(self):
-        return "PWhite(%s,%s)" % (self.min, self.max)
+        return f"PWhite({self.min},{self.max})"
 
     def __next__(self):
-        min = Pattern.value(self.min)
-        max = Pattern.value(self.max)
+        v_min = Pattern.value(self.min)
+        v_max = Pattern.value(self.max)
 
-        if isinstance(min, float):
-            return self.rng.uniform(min, max)
+        if isinstance(v_min, float):
+            return self.rng.uniform(v_min, v_max)
         else:
-            # --------------------------------------------------------------------------------
-            # rng.randint does not spread values across the range proportionately with
-            # varying values of [min, max]. Use rng.uniform() and do our own scaling to ensure
-            # that the output is controllable.
-            # --------------------------------------------------------------------------------
-            rv = int(self.rng.uniform(min, max))
-            return rv
+            return int(self.rng.uniform(v_min, v_max))
 
 
 class PBrown(PStochasticPattern):
@@ -93,33 +89,28 @@ class PBrown(PStochasticPattern):
     """
 
     def __init__(
-        self,
-        initial_value: float = 0,
-        step: float = 0.1,
-        min: float = -sys.maxsize,
-        max: float = sys.maxsize,
+            self,
+            initial_value: float = 0,
+            step: float = 0.1,
+            v_min: float = -sys.maxsize,
+            v_max: float = sys.maxsize,
     ):
         """
         Args:
             initial_value (float or int): Initial value
             step (float or int): Maximum value to increase or decrease by each step
-            min (float or int): Minimum permitted value
-            min (float or int): Maximum permitted value
+            v_min (float or int): Minimum permitted value
+            v_min (float or int): Maximum permitted value
         """
         super().__init__()
         self.initial_value = initial_value
         self.value = initial_value
         self.step = step
-        self.min = min
-        self.max = max
+        self.min = v_min
+        self.max = v_max
 
     def __repr__(self):
-        return "PBrown(%s, %s, %s, %s)" % (
-            self.initial_value,
-            self.step,
-            self.min,
-            self.max,
-        )
+        return f"PBrown({self.initial_value}, {self.step}, {self.min}, {self.max})"
 
     def reset(self):
         super().reset()
@@ -158,67 +149,56 @@ class PCoin(PStochasticPattern):
         self.probability = Pattern.pattern(probability)
         self.regular = regular
 
-        self.current_value = 0.0
-        if regular:
-            # Initialise current_value to 1 in order to immediately trigger
-            # coin() if regular is True
-            self.current_value = 1.0
+        self.current_value = 1.0 if regular else 0.0
 
     def __repr__(self):
-        return "PCoin(%s)" % self.probability
+        return f"PCoin({self.probability})"
 
     def __next__(self):
         probability = Pattern.value(self.probability)
-        regular = Pattern.value(self.regular)
-
-        if regular:
-            if self.current_value >= 1:
-                self.current_value -= 1
-                rv = 1
-            else:
-                rv = 0
-            self.current_value += probability
-            return rv
+        # if not (regular := Pattern.value(self.regular)):
+        if not (Pattern.value(self.regular)):
+            return 1 if self.rng.uniform(0, 1) < probability else 0
+        if self.current_value >= 1:
+            self.current_value -= 1
+            rv = 1
         else:
-            if self.rng.uniform(0, 1) < probability:
-                return 1
-            else:
-                return 0
+            rv = 0
+        self.current_value += probability
+        return rv
 
 
 class PRandomWalk(PStochasticPattern):
     """PWalk: Random walk around list.
            Jumps between `min` and `max` steps inclusive.
 
-    >>> PRandomWalk([ 0, 2, 5, 8, 11 ], min=1, max=2).nextn(16)
+    >>> PRandomWalk([ 0, 2, 5, 8, 11 ], v_min=1, v_max=2).nextn(16)
     [8, 11, 0, 8, 0, 11, 2, 11, 2, 0, 5, 8, 11, 8, 5, 8]
     """
 
     def __init__(
-        self, values: list = [], min: int = 1, max: int = 1, wrap: bool = True
+            self, values=None, v_min: int = 1, v_max: int = 1, wrap: bool = True
     ):
         """
 
         Args:
             values (list): Array of values to walk around
-            min (int): Minimum number of steps to move
-            max (int): Maximum number of steps to move
+            v_min (int): Minimum number of steps to move
+            v_max (int): Maximum number of steps to move
             wrap (bool): Whether to wrap around the start/end of the array
         """
         super().__init__()
+        self.pos = None
+        if values is None:
+            values = []
         self.values = values
-        self.min = min
-        self.max = max
+        self.min = v_min
+        self.max = v_max
         self.wrap = wrap
         self.reset()
 
     def __repr__(self):
-        return "PRandomWalk(%s, %s, %s, %s)" % (
-            repr(self.values),
-            self.min,
-            self.max,
-            self.wrap,
-        )
+        return f"PRandomWalk({repr(self.values)}, {self.min}, {self.max}, {self.wrap})"
 
     def reset(self):
         super().reset()
@@ -267,7 +247,7 @@ class PChoice(PStochasticPattern):
         self.weights = weights
 
     def __repr__(self):
-        return "PChoice(%s, %s)" % (repr(self.values), repr(self.weights))
+        return f"PChoice({repr(self.values)}, {repr(self.weights)})"
 
     def __next__(self):
         vvalues = Pattern.value(self.values)
@@ -303,11 +283,7 @@ class PSample(PStochasticPattern):
         self.weights = weights
 
     def __repr__(self):
-        return "PSample(%s, %s, %s)" % (
-            repr(self.values),
-            self.count,
-            repr(self.weights),
-        )
+        return f"PSample({repr(self.values)}, {self.count}, {repr(self.weights)})"
 
     def __next__(self):
         vvalues = copy.copy(Pattern.value(self.values))
@@ -320,7 +296,7 @@ class PSample(PStochasticPattern):
             )
 
         rv = []
-        for n in range(vcount):
+        for _ in range(vcount):
             if vweights:
                 index = wnchoice(list(range(len(vvalues))), vweights, rng=self.rng)
                 vweights.pop(index)
@@ -340,12 +316,14 @@ class PShuffle(PStochasticPattern):
     [1, 3, 2, 3, 2, 1, 2, 3, 1, 2, 3, 1, 1, 2, 3, 1]
     """
 
-    def __init__(self, values: list = [], repeats: int = sys.maxsize):
+    def __init__(self, values: list = None, repeats: int = sys.maxsize):
         """
         Args:
             values (list): List of values
             repeats (int): Number of times to re-shuffle and iterate
         """
+        if values is None:
+            values = []
         super().__init__()
         self.values_orig = copy.copy(values)
         self.repeats = repeats
@@ -355,7 +333,7 @@ class PShuffle(PStochasticPattern):
         self.values = copy.copy(self.values_orig)
 
     def __repr__(self):
-        return "PShuffle(%s, %s)" % (repr(self.values_orig), self.repeats)
+        return f"PShuffle({repr(self.values_orig)}, {self.repeats})"
 
     def reset(self):
         super().reset()
@@ -396,7 +374,7 @@ class PShuffleInput(PStochasticPattern):
         self.pos = 0
 
     def __repr__(self):
-        return "PShuffleInput(%s, %s)" % (repr(self.pattern), self.every)
+        return f"PShuffleInput({repr(self.pattern)}, {self.every})"
 
     def __next__(self):
         if self.pos >= len(self.values):
@@ -425,7 +403,7 @@ class PSkip(PStochasticPattern):
         self.pos = 0.0
 
     def __repr__(self):
-        return "PSkip(%s, %s, %s)" % (repr(self.pattern), self.play, self.regular)
+        return f"PSkip({repr(self.pattern)}, {self.play}, {self.regular})"
 
     def __next__(self):
         value = Pattern.value(self.pattern)
@@ -436,9 +414,8 @@ class PSkip(PStochasticPattern):
             if self.pos >= 1:
                 self.pos -= 1
                 return value
-        else:
-            if self.rng.uniform(0, 1) < play:
-                return value
+        elif self.rng.uniform(0, 1) < play:
+            return value
 
         return None
 
@@ -462,7 +439,7 @@ class PFlipFlop(PStochasticPattern):
         self.p_off = p_off
 
     def __repr__(self):
-        return "PFlipFlop(%s, %s, %s)" % (self.initial, self.p_on, self.p_off)
+        return f"PFlipFlop({self.initial}, {self.p_on}, {self.p_off})"
 
     def reset(self):
         super().reset()
@@ -476,9 +453,8 @@ class PFlipFlop(PStochasticPattern):
         if self.value == 0:
             if self.rng.uniform(0, 1) < self.p_on:
                 self.value = 1
-        else:
-            if self.rng.uniform(0, 1) < self.p_off:
-                self.value = 0
+        elif self.rng.uniform(0, 1) < self.p_off:
+            self.value = 0
 
         return self.value
 
@@ -488,12 +464,14 @@ class PSwitchOne(PStochasticPattern):
 
     def __init__(self, pattern: Pattern, length: int = 4):
         super().__init__()
+        self.pos = None
+        self.values = None
         self.pattern = pattern
         self.length = length
         self.reset()
 
     def __repr__(self):
-        return "PSwitchOne(%s, %s)" % (repr(self.pattern), self.length)
+        return f"PSwitchOne({repr(self.pattern)}, {self.length})"
 
     def reset(self):
         super().reset()
@@ -511,9 +489,9 @@ class PSwitchOne(PStochasticPattern):
 
         if self.pos >= len(self.values):
             index = self.rng.randint(0, len(self.values)) - 1
-            indexP = (index + 1) % len(self.values)
-            self.values[index], self.values[indexP] = (
-                self.values[indexP],
+            index_p = (index + 1) % len(self.values)
+            self.values[index], self.values[index_p] = (
+                self.values[index_p],
                 self.values[index],
             )
             self.pos = 0
@@ -538,25 +516,22 @@ class PRandomExponential(PStochasticPattern):
 
     abbreviation = "prandexp"
 
-    def __init__(self, min: float = 1.0, max: float = 10.0):
+    def __init__(self, v_min: float = 1.0, v_max: float = 10.0):
         super().__init__()
 
-        self.min = min
-        self.max = max
+        self.min = v_min
+        self.max = v_max
 
     def __repr__(self):
-        return "PRandomExponential(%s, %s)" % (self.min, self.max)
+        return f"PRandomExponential({self.min}, {self.max})"
 
     def __next__(self):
-        min = Pattern.value(self.min)
-        max = Pattern.value(self.max)
+        v_min = Pattern.value(self.min)
+        v_max = Pattern.value(self.max)
 
         norm = self.rng.uniform(0, 1)
-        rv = scale_lin_exp(norm, 0, 1, min, max)
-        if isinstance(min, float):
-            return rv
-        else:
-            return int(rv)
+        rv = scale_lin_exp(norm, 0, 1, v_min, v_max)
+        return rv if isinstance(v_min, float) else int(rv)
 
 
 class PRandomImpulseSequence(PStochasticPattern):
@@ -572,6 +547,9 @@ class PRandomImpulseSequence(PStochasticPattern):
     def __init__(self, probability: float = 0.0, length: int = 8):
         super().__init__()
 
+        self.every_index = None
+        self.every_count = None
+        self.every_action = None
         self.probability = probability
         self.length = length
         self.current_length = 0
@@ -580,7 +558,7 @@ class PRandomImpulseSequence(PStochasticPattern):
         self.every(0)
 
     def __repr__(self):
-        return "PRandomImpulseSequence(%s, %s)" % (self.probability, self.length)
+        return f"PRandomImpulseSequence({self.probability}, {self.length})"
 
     def generate(self):
         probability = Pattern.value(self.probability)
@@ -609,21 +587,21 @@ class PRandomImpulseSequence(PStochasticPattern):
 
     def explore(self):
         # TODO: Merge function with PExplorer
-        P_SWITCH = 0
-        P_MUTATE = 1
-        P_ROTATE = 2
-        op = self.rng.choice([P_SWITCH, P_MUTATE, P_ROTATE])
-        if op == P_SWITCH:
+        p_switch = 0
+        p_mutate = 1
+        p_rotate = 2
+        op = self.rng.choice([p_switch, p_mutate, p_rotate])
+        if op == p_switch:
             indices = list(range(len(self.values)))
             self.rng.shuffle(indices)
             self.values[indices[0]], self.values[indices[1]] = (
                 self.values[indices[1]],
                 self.values[indices[0]],
             )
-        elif op == P_MUTATE:
+        elif op == p_mutate:
             index = random.randrange(len(self.values))
             self.values[index] = 1 - self.values[index]
-        elif op == P_ROTATE:
+        elif op == p_rotate:
             direction_right = self.rng.uniform(0, 1) < 0.5
             if direction_right:
                 self.values = [self.values[-1]] + self.values[:-1]

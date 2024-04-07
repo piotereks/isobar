@@ -1,5 +1,6 @@
 import isobar_ext as iso
 
+
 def test_plsystem():
     a = iso.PLSystem("N[-N++N]-N", 1)
     assert list(a) == [0, -1, 1, -1]

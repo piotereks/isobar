@@ -1,6 +1,8 @@
-from pythonosc.udp_client import SimpleUDPClient
-import time
 import pickle
+import time
+
+from pythonosc.udp_client import SimpleUDPClient
+
 from isobar_ext.pattern.static import Globals
 
 

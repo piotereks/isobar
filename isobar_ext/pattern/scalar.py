@@ -1,9 +1,10 @@
 from __future__ import annotations
-from .core import Pattern
-from .sequence import PSeries
-from ..util import scale_lin_exp, scale_lin_lin
 
 from typing import Callable
+
+from .core import Pattern
+from .series import PSeries
+from ..util import scale_lin_exp, scale_lin_lin
 
 
 class PChanged(Pattern):

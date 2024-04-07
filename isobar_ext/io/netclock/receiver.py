@@ -1,7 +1,8 @@
-from pythonosc.dispatcher import Dispatcher
-from pythonosc.osc_server import BlockingOSCUDPServer
 import threading
 import time
+
+from pythonosc.dispatcher import Dispatcher
+from pythonosc.osc_server import BlockingOSCUDPServer
 
 from ...constants import DEFAULT_TICKS_PER_BEAT
 
@@ -16,7 +17,7 @@ class NetworkClockReceiver:
     """
 
     def __init__(
-        self, clock_target=None, port=8192, ticks_per_beat=DEFAULT_TICKS_PER_BEAT
+            self, clock_target=None, port=8192, ticks_per_beat=DEFAULT_TICKS_PER_BEAT
     ):
         self.clock_target = clock_target
 
@@ -54,6 +55,7 @@ if __name__ == "__main__":
     class DummyClockTarget:
         def tick(self):
             print("tick")
+
 
     receiver = NetworkClockReceiver(clock_target=DummyClockTarget())
     while True:

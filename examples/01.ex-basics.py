@@ -14,6 +14,9 @@ from isobar_ext import *
 #------------------------------------------------------------------------
 import logging
 
+from isobar_ext.pattern.series import PSeries
+
+
 def main():
     #------------------------------------------------------------------------
     # Create a geometric series on a minor scale.

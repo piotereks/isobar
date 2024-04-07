@@ -1,18 +1,18 @@
 from __future__ import annotations
-import sys
-import math
+
 import copy  # noqa: F401
-import random
 import itertools
+import logging
+import math
+import random
+import sys
+from functools import reduce
 from typing import Iterable, Callable, List
 
+from .chance import PStochasticPattern
 from .core import Pattern
 from ..chord import Chord
 from ..constants import INTERPOLATION_NONE, INTERPOLATION_LINEAR, INTERPOLATION_COSINE
-from functools import reduce
-from .chance import PStochasticPattern
-
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -25,13 +25,13 @@ class PSequence(Pattern):
         >>> p.nextn(10)
         [1, 2, 3, 5, 1, 2, 3, 5, 1, 2, 3, 5, 1, 2, 3, 5]
         """
-    
+
     abbreviation = "pseq"
 
     def __init__(self, sequence: Iterable = None, repeats: int = sys.maxsize):
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # take a copy of the list to avoid changing the original
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         if not hasattr(sequence, "__getitem__"):
             raise ValueError("Sequence must take a list argument")
         if sequence is None:
@@ -80,43 +80,10 @@ class PSequence(Pattern):
         """
         return self.sequence[item]
 
+
 # Backwards-compatbility
 PSeq = PSequence
 
-class PSeries(Pattern):
-    """ PSeries: Arithmetic series, beginning at `start`, increment by `step`
-
-        >>> p = PSeries(3, 9)
-        >>> p.nextn(16)
-        [3, 12, 21, 30, 39, 48, 57, 66, 75, 84, 93, 102, 111, 120, 129, 138]
-        """
-
-    def __init__(self, start: float = 0, step: float = 1, length: int = sys.maxsize):
-        self.start = start
-        self.value = start
-        self.step = step
-        self.length = length
-        self.count = 0
-
-    def __repr__(self):
-        return ("PSeries(%s, %s, %s)" % (self.start, self.step, self.length))
-
-    def reset(self):
-        super().reset()
-
-        self.value = self.start
-        self.count = 0
-
-    def __next__(self):
-        length = Pattern.value(self.length)
-        if self.count >= length:
-            # return None
-            raise StopIteration
-        step = Pattern.value(self.step)
-        n = self.value
-        self.value += step
-        self.count += 1
-        return n
 
 class PRange(Pattern):
     """ PRange: Similar to PSeries, but specify a max/step value.
@@ -156,6 +123,7 @@ class PRange(Pattern):
         self.value += step
         return rv
 
+
 class PGeom(Pattern):
     """ PGeom: Geometric series, beginning at `start`, multiplied by `step`
 
@@ -190,6 +158,7 @@ class PGeom(Pattern):
         self.count += 1
         return rv
 
+
 class PImpulse(Pattern):
     """ PImpulse: Outputs a 1 every <period> events, otherwise 0.
 
@@ -222,6 +191,7 @@ class PImpulse(Pattern):
         self.pos += 1
 
         return rv
+
 
 class PLoop(Pattern):
     """ PLoop: Repeats a finite `pattern` for `n` repeats.
@@ -271,6 +241,7 @@ class PLoop(Pattern):
         self.pos += 1
         return rv
 
+
 class PPingPong(Pattern):
     """ PPingPong: Ping-pong input pattern back and forth N times.
 
@@ -308,6 +279,7 @@ class PPingPong(Pattern):
             self.rpos += 1
 
         return rv
+
 
 class PCreep(Pattern):
     """ PCreep: Loop `length`-note segment, progressing `creep` notes after `repeats` repeats.
@@ -351,22 +323,22 @@ class PCreep(Pattern):
             repeat = random.uniform(0, 1) < prob
 
             if self.rcount >= repeats or not repeat:
-                #------------------------------------------------------------------------
+                # ------------------------------------------------------------------------
                 # finished creeping, pull some more data from our buffer
-                #------------------------------------------------------------------------
+                # ------------------------------------------------------------------------
                 for n in range(creep):
                     self.buffer.pop(0)
                     self.buffer.append(next(self.pattern))
                 self.rcount = 1
             else:
-                #------------------------------------------------------------------------
+                # ------------------------------------------------------------------------
                 # finished the Nth repeat but, still more repeats to do
-                #------------------------------------------------------------------------
+                # ------------------------------------------------------------------------
                 self.rcount += 1
 
-            #------------------------------------------------------------------------
+            # ------------------------------------------------------------------------
             # reset to the start of our buffer
-            #------------------------------------------------------------------------
+            # ------------------------------------------------------------------------
             if not repeat:
                 self.pos -= 1
             else:
@@ -374,6 +346,7 @@ class PCreep(Pattern):
 
         self.pos += 1
         return self.buffer[self.pos - 1]
+
 
 class PStutter(Pattern):
     """ PStutter: Play each note of `pattern` `count` times.
@@ -403,6 +376,7 @@ class PStutter(Pattern):
             self.pos = 0
         self.pos += 1
         return self.value
+
 
 class PSubsequence(Pattern):
     """ PSubsequence: Returns a finite subsequence of an input pattern.
@@ -441,6 +415,7 @@ class PSubsequence(Pattern):
 
         return rv
 
+
 class PInterpolate(Pattern):
     def __init__(self, pattern: Pattern, steps: int, interpolation: str = INTERPOLATION_LINEAR):
         self.pattern = pattern
@@ -461,18 +436,18 @@ class PInterpolate(Pattern):
         if self.pos == len(self.step_values):
             vsteps = int(Pattern.value(self.steps))
 
-            #--------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------------
             # Special case in which next step duration is zero: set the target value
             # instantly, and pull a new target value.
-            #--------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------------
             while vsteps == 0:
                 self.value = next(self.pattern)
                 vsteps = int(Pattern.value(self.steps))
             target = next(self.pattern)
 
-            #--------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------------
             # Calculate interpolated values.
-            #--------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------------
             if self.interpolation == INTERPOLATION_NONE:
                 self.step_values = list(self.value for n in range(vsteps - 1)) + [target]
             elif self.interpolation == INTERPOLATION_LINEAR:
@@ -490,6 +465,7 @@ class PInterpolate(Pattern):
         self.pos += 1
         return self.value
 
+
 class PReverse(Pattern):
     """ PReverse: Reverses a finite sequence. """
 
@@ -506,6 +482,7 @@ class PReverse(Pattern):
 
     def __next__(self):
         return next(self.values)
+
 
 class PReset(Pattern):
     """ PReset: Resets `pattern` whenever `trigger` is true
@@ -528,6 +505,7 @@ class PReset(Pattern):
             self.pattern.reset()
 
         return next(self.pattern)
+
 
 class PCounter(Pattern):
     """ PCounter: Increments a counter by 1 for each zero-crossing in `trigger`.
@@ -555,6 +533,7 @@ class PCounter(Pattern):
 
         return self.count
 
+
 class PCollapse(Pattern):
     """ PCollapse: Skip over any rests in `input` """
 
@@ -569,6 +548,7 @@ class PCollapse(Pattern):
         while rv is None:
             rv = Pattern.value(self.input)
         return rv
+
 
 class PNoRepeats(Pattern):
     """ PNoRepeats: Skip over repeated values in `input` """
@@ -586,6 +566,7 @@ class PNoRepeats(Pattern):
             rv = Pattern.value(self.input)
         self.value = rv
         return rv
+
 
 class PPad(Pattern):
     """ PPad: Pad `pattern` with rests until it reaches length `length`.
@@ -613,6 +594,7 @@ class PPad(Pattern):
 
         self.count += 1
         return rv
+
 
 class PPadToMultiple(Pattern):
     """ PPadToMultiple: Pad `pattern` with rests until its length is divisible by `multiple`.
@@ -645,6 +627,7 @@ class PPadToMultiple(Pattern):
         self.count += 1
         return rv
 
+
 class PArpeggiator(PStochasticPattern):
     """ PArpeggiator: Arpeggiator.
 
@@ -672,7 +655,7 @@ class PArpeggiator(PStochasticPattern):
     BUILD = 8
     BREAK = 9
     ROOTBOUNCE = 10
-    
+
     abbreviation = "parp"
 
     def __init__(self, chord: Chord = Chord.major, type: int = UP, loop: bool = False):
@@ -685,14 +668,14 @@ class PArpeggiator(PStochasticPattern):
         self.offsets = []
 
         try:
-            #------------------------------------------------------------------------
+            # ------------------------------------------------------------------------
             # prefer to specify a chord (or Key)
-            #------------------------------------------------------------------------
+            # ------------------------------------------------------------------------
             self._notes = self.chord.semitones
         except AttributeError:
-            #------------------------------------------------------------------------
+            # ------------------------------------------------------------------------
             # can alternatively specify a list of notes
-            #------------------------------------------------------------------------
+            # ------------------------------------------------------------------------
             self._notes = self.chord
 
         self.restart()
@@ -727,9 +710,9 @@ class PArpeggiator(PStochasticPattern):
         elif self.type == PArpeggiator.RANDOM:
             self.offsets = list(range(len(self._notes)))
             self.rng.shuffle(self.offsets)
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # Abnormal length patterns
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         elif self.type == PArpeggiator.UPDOWN:
             # Min length (for loop): 2
             self.offsets = list(range(len(self._notes)))[:-1] + list(reversed(list(range(len(self._notes)))))
@@ -746,13 +729,14 @@ class PArpeggiator(PStochasticPattern):
             # Min length: 2
             if (len(self._notes) < 2):
                 raise ValueError("Arpeggiator type BUILD requires at least 2 notes")
-            self.offsets = list(itertools.chain.from_iterable([range(0,n + 1) for n in range(len(self._notes))]))
+            self.offsets = list(itertools.chain.from_iterable([range(0, n + 1) for n in range(len(self._notes))]))
         elif self.type == PArpeggiator.BREAK:
             # n, n, n-1, n, n-1, n-2, n, n-1, n-2, n-3, ...
             # Min length: 2
             if (len(self._notes) < 2):
                 raise ValueError("Arpeggiator type BREAK requires at least 2 notes")
-            self.offsets = list(itertools.chain.from_iterable([range(n - 1, -1, -1) for n in range(len(self._notes), -1, -1)]))
+            self.offsets = list(
+                itertools.chain.from_iterable([range(n - 1, -1, -1) for n in range(len(self._notes), -1, -1)]))
         elif self.type == PArpeggiator.ROOTBOUNCE:
             # 0, 1, 0, 2, ..., 0, n, 0, n - 1, ..., 0, 2, 0, 1, 0
             # Min length: 3
@@ -789,6 +773,7 @@ class PArpeggiator(PStochasticPattern):
             return next(self)
         else:
             raise StopIteration
+
 
 class PEuclidean(Pattern):
     """ PEuclidean: Generate Euclidean rhythms.
@@ -864,8 +849,10 @@ class PEuclidean(Pattern):
 
         return reduce(lambda a, b: a + b, seqs + remainder)
 
+
 class PExplorer(Pattern):
-    def __init__(self, density: float = 0.5, length: int = 4, length_min: int = 2, length_max: int = 6, value_max: int = 12, jump_max: int = 4, loop: float = None):
+    def __init__(self, density: float = 0.5, length: int = 4, length_min: int = 2, length_max: int = 6,
+                 value_max: int = 12, jump_max: int = 4, loop: float = None):
         self.density = density
         self.length = length
         self.length_min = length_min
@@ -876,7 +863,8 @@ class PExplorer(Pattern):
         self.reset()
 
     def __repr__(self):
-        return ("PExplorer(%s, %s, %s, %s, %s, %s, %s)" % (self.density, self.length, self.length_min, self.length_max, self.value_max, self.jump_max, self.loop))
+        return ("PExplorer(%s, %s, %s, %s, %s, %s, %s)" % (
+            self.density, self.length, self.length_min, self.length_max, self.value_max, self.jump_max, self.loop))
 
     def reset(self):
         super().reset()
@@ -927,63 +915,63 @@ class PExplorer(Pattern):
         operation = random.choice(operations)
         log.debug("PExplorer: Selected operation: %s" % OPERATION_NAMES[operation])
 
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # MUTATE: Replace a note with another note found within the sequence.
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         if operation == OP_MUTATE:
             filled_indices = [n[0] for n in filter(lambda n: n[1] is not None, list(enumerate(values)))]
             if len(filled_indices) > 0:
                 index = random.choice(filled_indices)
                 values[index] = random.randint(0, self.value_max)
 
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # ROTATE: Rotate the sequence forwards or backwards one slot.
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         elif operation == OP_ROTATE:
             if random.uniform(0, 1) < 0.1:
                 values = values[-1:] + values[:-1]
             else:
                 values = values[1:] + values[:1]
 
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # SWAP: Exchange two notes.
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         elif operation == OP_SWAP:
             indexA = random.randint(0, len(values) - 1)
             indexB = (indexA + 1) % len(values)
             values[indexA], values[indexB] = values[indexB], values[indexA]
 
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # SPLIT: Cut sequence in half and swap parts.
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         elif operation == OP_SPLIT:
             point = random.randint(1, len(values) - 1)
             values = values[:point] + values[point:]
 
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # REVERSE: Reverses the sequence.
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         elif operation == OP_REVERSE:
             values = list(reversed(values))
 
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # DELETE: Remove an item.
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         elif operation == OP_DELETE:
             index = random.randrange(len(values))
             del (values[index])
 
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # INSERT: Insert a new value at random.
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         elif operation == OP_INSERT:
             index = random.randint(0, len(values))
             value = random.choice(list(range(self.value_max + 1)) + [None])
             values.insert(index, value)
 
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         # COPY: Duplicate a note at the subsequent index.
-        #------------------------------------------------------------------------
+        # ------------------------------------------------------------------------
         elif operation == OP_COPY:
             index = random.randint(0, len(values) - 1)
             values.insert(index + 1, values[index])
@@ -1008,6 +996,7 @@ class PExplorer(Pattern):
         rv = self.values[self.counter]
         self.counter += 1
         return rv
+
 
 class PPermut(Pattern):
     """ PPermut: Generate every permutation of `count` input items.
@@ -1062,6 +1051,7 @@ class PPermut(Pattern):
         self.pos += 1
         return rv
 
+
 class PPatternGeneratorAction(Pattern):
     """ PPatternGeneratorAction: Each time its pattern is exhausted, request a new pattern by calling <fn>.
 
@@ -1088,7 +1078,9 @@ class PPatternGeneratorAction(Pattern):
                 raise StopIteration
             return next(self)
 
+
 PDecisionPoint = PPatternGeneratorAction
+
 
 class PSequenceAction(Pattern):
     """ PSequenceAction: Iterate over an array, perform a function, and repeat.
@@ -1125,6 +1117,7 @@ class PSequenceAction(Pattern):
             self.list = self.fn(self.list)
             self.sequence = PSequence(self.list, 1)
             return next(self)
+
 
 class PMetropolis(Pattern):
     def __init__(self, notes: Iterable, repeats: int, rests: int):

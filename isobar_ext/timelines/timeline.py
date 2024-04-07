@@ -1,27 +1,26 @@
-import math
 import copy
-import time
 import logging
+import math
 import threading
+import time
 import traceback
-from typing import Callable, Any, Optional, Union
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import partial
-from collections.abc import Iterable
+from typing import Callable, Any, Optional, Union
 
-from .track import Track
 from .clock import Clock
 from .event import EventDefaults
-from ..io import MidiOutputDevice, OutputDevice
-from ..pattern import PSequence
-from ..constants import (DEFAULT_TICKS_PER_BEAT, DEFAULT_TEMPO, EVENT_ACTION, EVENT_ACTION_ARGS, EVENT_DURATION,
-                         EVENT_TIME)
+from .track import Track
+from ..constants import (DEFAULT_TICKS_PER_BEAT, DEFAULT_TEMPO, EVENT_ACTION, EVENT_ACTION_ARGS, EVENT_DURATION)
 from ..constants import INTERPOLATION_NONE
 from ..exceptions import (
     TrackLimitReachedException,
     TrackNotFoundException,
     MultipleOutputDevicesException,
 )
+from ..io import MidiOutputDevice, OutputDevice
+from ..pattern import PSequence
 from ..util import make_clock_multiplier
 
 log = logging.getLogger(__name__)
@@ -35,11 +34,11 @@ class Action:
 
 class Timeline:
     def __init__(self,
-            tempo: float = DEFAULT_TEMPO,
-            output_device: Any = None,
-            clock_source: Any = None,
-            ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
-    ):
+                 tempo: float = DEFAULT_TEMPO,
+                 output_device: Any = None,
+                 clock_source: Any = None,
+                 ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
+                 ):
         """
         A Timeline object encapsulates a number of Tracks, each of which
         represents a sequence of note or control events.
@@ -146,10 +145,7 @@ class Timeline:
         Returns:
             The number of ticks per beat.
         """
-        if self.clock_source:
-            return self.clock_source.ticks_per_beat
-        else:
-            return None
+        return self.clock_source.ticks_per_beat if self.clock_source else None
 
     def set_ticks_per_beat(self, ticks_per_beat: int):
         """
@@ -285,12 +281,11 @@ class Timeline:
             try:
                 track.tick()
             except Exception as e:  # noqa: F841 (but we don't care if it's not used)
-                if self.ignore_exceptions:
-                    tb = traceback.format_exc()
-                    log.warning("*** Exception in track: %s" % tb)
-                    self.tracks.remove(track)
-                else:
+                if not self.ignore_exceptions:
                     raise
+                tb = traceback.format_exc()
+                log.warning(f"*** Exception in track: {tb}")
+                self.tracks.remove(track)
             if track.is_finished and track.remove_when_done:
                 self.tracks.remove(track)
                 log.info(
@@ -301,7 +296,7 @@ class Timeline:
         # --------------------------------------------------------------------------------
         # If we've run out of notes, raise a StopIteration.
         # --------------------------------------------------------------------------------
-        if len(self.tracks) == 0 and len(self.actions) == 0 and self.stop_when_done:
+        if len(self.tracks) == 0 and not self.actions and self.stop_when_done:
             # TODO: Don't do this if we've never played any events, e.g.
             #       right after calling timeline.start(). Should at least
             #       wait for some events to happen first.
@@ -327,20 +322,16 @@ class Timeline:
         Output a summary of this Timeline object to stdout.
         """
         print(
-            "Timeline (clock: %s, tempo %s)"
-            % (
-                self.clock_source,
-                self.clock_source.tempo if self.clock_source.tempo else "unknown",
-            )
+            f'Timeline (clock: {self.clock_source}, tempo {self.clock_source.tempo or "unknown"})'
         )
 
         print((" - %d devices" % len(self.output_devices)))
         for device in self.output_devices:
-            print(("   - %s" % device))
+            print(f"   - {device}")
 
         print((" - %d tracks" % len(self.tracks)))
         for tracks in self.tracks:
-            print(("   - %s" % tracks))
+            print(f"   - {tracks}")
 
     def reset_to_beat(self):
         """
@@ -401,7 +392,7 @@ class Timeline:
             self.running = False
 
         except Exception as e:
-            print((" *** Exception in Timeline thread: %s" % e))
+            print(f" *** Exception in Timeline thread: {e}")
             if not self.ignore_exceptions:
                 raise e
 
@@ -511,7 +502,8 @@ class Timeline:
             track_index (int):       When specified, inserts the Track at the given index.
                                      This can be used to set the priority of an event and ensure that it happens
                                      before another Track is evaluted, used in (e.g.) Track.update().
-            sel_track_idx (int):     Track index to use for event arguments (default: None). This says about midinote track schedule us assigned to
+            sel_track_idx (int):     Track index to use for event arguments (default: None). This says about midinote
+                                    track schedule us assigned to
         Returns:
             The new `Track` object.
 
@@ -594,25 +586,21 @@ class Timeline:
 
             params_list2.append(param)
 
-
         # --------------------------------------------------------------------------------
         # If replace=True is specified, updated the params of any existing track
         # with the same name. If none exists, proceed to create it as usual.
         # --------------------------------------------------------------------------------
         for param in params_list2:
-            if isinstance(param, dict):
-                extra_delay = param.pop("delay", None)
-            else:
-                extra_delay = None
+            extra_delay = param.pop("delay", None) if isinstance(param, dict) else None
             if replace:
                 if name is None:
                     raise ValueError("Must specify a track name if `replace` is specified")
                 for existing_track in self.tracks:
                     if existing_track.name == name:
                         existing_track.update(param,
-                                          quantize=quantize,
-                                          delay=delay,
-                                          interpolate=interpolate)
+                                              quantize=quantize,
+                                              delay=delay,
+                                              interpolate=interpolate)
                     # TODO: Add unit test for update interpolate
                     # TODO: Add unit test around this (returning the track?)
                     return existing_track
@@ -632,7 +620,7 @@ class Timeline:
                 log.info("Timeline: Scheduled new track (total tracks: %d)" % len(self.tracks))
 
             if not bool(event_args) and sel_track_idx is not None:
-            # if not bool(event_args):
+                # if not bool(event_args):
                 event_args = {"track_idx": sel_track_idx}
                 if not bool(param.get(EVENT_ACTION_ARGS, {})):
                     param[EVENT_ACTION_ARGS] = event_args
@@ -655,7 +643,6 @@ class Timeline:
 
                 track.update(copy.copy(param), quantize=quantize, delay=delay or extra_delay)
             tracks_list.append(track)
-
 
             start_track(track)
 
@@ -719,10 +706,7 @@ class Timeline:
         if isinstance(track_id, int):
             return self.tracks[track_id]
         elif isinstance(track_id, str):
-            for track in self.tracks:
-                if track.name == track_id:
-                    return track
-            return None
+            return next((track for track in self.tracks if track.name == track_id), None)
         else:
             raise TypeError("Invalid type for track_id (must be an int or str)")
 

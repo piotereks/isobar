@@ -1,10 +1,9 @@
-import os
 import platform
-import isobar_ext as iso
-from isobar_ext.io.midi import MidiInputDevice, MidiOutputDevice
-import pytest
 import time
-from . import dummy_timeline
+import platform
+import pytest
+
+import isobar_ext as iso
 
 VIRTUAL_DEVICE_NAME = "Virtual Device"
 
@@ -13,6 +12,7 @@ try:
     midi_out = iso.MidiOutputDevice()
 except iso.DeviceNotFoundException:
     no_midi = True
+
 
 @pytest.mark.skipif(no_midi, reason="Device does not have MIDI support")
 @pytest.mark.skipif(platform.system() == "Windows", reason="Test not supported on Windows")
@@ -23,9 +23,11 @@ def test_io_midi():
     created so is visible to rtmidi as an existing device.
     """
     events = []
+
     def log_event(message):
         nonlocal events
         events.append(message)
+
     midi_in = iso.MidiInputDevice(VIRTUAL_DEVICE_NAME, virtual=True)
     midi_in.callback = log_event
     midi_out = iso.MidiOutputDevice(VIRTUAL_DEVICE_NAME)
@@ -33,11 +35,12 @@ def test_io_midi():
     timeline = iso.Timeline(120, midi_out)
     timeline.stop_when_done = True
     timeline.schedule({
-        "note": iso.PSequence([ 60 ], 1),
-        "duration" : 0.1
+        "note": iso.PSequence([60], 1),
+        "duration": 0.1
     })
     timeline.run()
     assert len(events) == 1
+
 
 @pytest.mark.skipif(no_midi, reason="Device does not have MIDI support")
 @pytest.mark.skipif(platform.system() == "Windows", reason="Test not supported on Windows")
@@ -52,4 +55,3 @@ def test_io_midi_sync():
     time.sleep(0.1)
     clock.stop()
     assert midi_in.tempo == pytest.approx(tempo, rel=0.03)
-

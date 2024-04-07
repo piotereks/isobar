@@ -1,3 +1,9 @@
+import logging
+import random
+import threading
+import time
+from typing import Any
+
 from ..constants import (
     DEFAULT_TEMPO,
     DEFAULT_TICKS_PER_BEAT,
@@ -5,21 +11,15 @@ from ..constants import (
 )
 from ..util import make_clock_multiplier
 
-import time
-import random
-import logging
-import threading
-from typing import Any
-
 logger = logging.getLogger(__name__)
 
 
 class Clock:
     def __init__(
-        self,
-        clock_target: Any = None,
-        tempo: float = DEFAULT_TEMPO,
-        ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
+            self,
+            clock_target: Any = None,
+            tempo: float = DEFAULT_TEMPO,
+            ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
     ):
         """
         A Clock generates tick events at a regular interval, defined by the `ticks_per_beat` property.

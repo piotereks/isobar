@@ -1,12 +1,13 @@
-from ...pattern import Pattern
-from ..output import OutputDevice
-from ...constants import DEFAULT_TICKS_PER_BEAT
-from ..midi.output import MidiOutputDevice
-from mido import Message, MidiFile, MidiTrack
-
-
+import contextlib
 import logging
 import re
+
+from mido import Message, MidiFile, MidiTrack
+
+from ..midi.output import MidiOutputDevice
+from ..output import OutputDevice
+from ...constants import DEFAULT_TICKS_PER_BEAT
+from ...pattern import Pattern
 
 log = logging.getLogger(__name__)
 
@@ -86,7 +87,6 @@ class MidiFileOutputDevice(OutputDevice):
     def tick(self):
         self.time = list(map(lambda x: x + (1.0 / self.ticks_per_beat), self.time))
 
-
     def _msg_deduplication(self):
         new_mid = MidiFile()
 
@@ -98,7 +98,7 @@ class MidiFileOutputDevice(OutputDevice):
                 if msg.time != 0:
                     latest_meta_messages = {}
                 if msg.is_meta or (msg.type not in ('note_on', 'note_off')):
-                    key = None
+                    # key = None
                     if msg.type == 'text':
                         key = re.search(r'^.*?:', msg.text)[0]
                     elif hasattr(msg, 'channel'):
@@ -123,7 +123,6 @@ class MidiFileOutputDevice(OutputDevice):
 
         self.midifile.tracks = new_mid.tracks
         self.miditrack = new_mid.tracks
-
 
     def note_on(self, note=60, velocity=64, channel=0, track_idx=0):
         # ------------------------------------------------------------------------
@@ -162,8 +161,8 @@ class MidiFileOutputDevice(OutputDevice):
     def control(self, control=0, value=0, channel=0, track_idx=0):
         track = self.get_channel_track(channel=channel, src_track_idx=track_idx)
         if track >= 0:
-            dt = self.time[track] - self.last_event_time[track]
-            dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
+            # dt = self.time[track] - self.last_event_time[track]
+            # dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
             self.miditrack[track].append(
                 Message('control_change', control=int(control), value=int(value), channel=int(channel)))
             self.last_event_time[track] = self.time[track]
@@ -171,8 +170,8 @@ class MidiFileOutputDevice(OutputDevice):
     def pitch_bend(self, pitch=0, channel=0, track_idx=0):
         track = self.get_channel_track(channel=channel, src_track_idx=track_idx)
         if track >= 0:
-            dt = self.time[track] - self.last_event_time[track]
-            dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
+            # dt = self.time[track] - self.last_event_time[track]
+            # dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
             self.miditrack[track].append(
                 Message('pitchwheel', pitch=int(pitch), channel=int(channel)))
             self.last_event_time[track] = self.time[track]
@@ -181,8 +180,8 @@ class MidiFileOutputDevice(OutputDevice):
         log.debug("[midi] Program change (channel %d, program_change %d)" % (channel, program))
         track = self.get_channel_track(channel=channel, src_track_idx=track_idx)
         if track >= 0:
-            dt = self.time[track] - self.last_event_time[track]
-            dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
+            # dt = self.time[track] - self.last_event_time[track]
+            # dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
             self.miditrack[track].append(
                 Message('program_change', program=int(program), channel=int(channel)))
             self.last_event_time[track] = self.time[track]
@@ -190,21 +189,22 @@ class MidiFileOutputDevice(OutputDevice):
     def aftertouch(self, value=0, channel=0, track_idx=0):
         track = self.get_channel_track(channel=channel, src_track_idx=track_idx)
         if track >= 0:
-            dt = self.time[track] - self.last_event_time[track]
-            dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
+            # dt = self.time[track] - self.last_event_time[track]
+            # dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
             self.miditrack[track].append(
-                msg = Message('aftertouch', value=value, channel=int(channel)))
+                msg=Message('aftertouch', value=value, channel=int(channel)))
             self.last_event_time[track] = self.time[track]
 
     def polytouch(self, value=0, note=0, channel=0, track_idx=0):
         track = self.get_channel_track(channel=channel, src_track_idx=track_idx)
         # track = track_idx  #  tmp change
         if track >= 0:
-            dt = self.time[track] - self.last_event_time[track]
-            dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
+            # dt = self.time[track] - self.last_event_time[track]
+            # dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
             self.miditrack[track].append(
-                msg = Message('polytouch', value=int(value), note=note, channel=int(channel)))
+                msg=Message('polytouch', value=int(value), note=note, channel=int(channel)))
             self.last_event_time[track] = self.time[track]
+
 
 class PatternWriterMIDI:
     """Writes a pattern to a MIDI file.
@@ -218,28 +218,22 @@ class PatternWriterMIDI:
         self.track = 0
         self.channel = 0
         self.volume = 64
+        self.filename = filename
 
-    def add_track(self, pattern, track_number=0, track_name="track", dur=1.0):
+    # def add_track(self, pattern, track_number=0, track_name="track", dur=1.0):
+    def add_track(self, pattern, track_number=0, dur=1.0):
         time = 0
 
         # naive approach: assume every duration is 1
         # TODO: accept dicts or PDicts
-        try:
+        with contextlib.suppress(StopIteration):
             for note in pattern:
                 vdur = Pattern.value(dur)
                 if note is not None and vdur is not None:
                     self.score.addNote(
                         track_number, self.channel, note, time, vdur, self.volume
                     )
-                    time += vdur
-                else:
-                    time += vdur
-        except StopIteration:
-            # ------------------------------------------------------------------------
-            # a StopIteration exception means that an input pattern has been
-            # exhausted. catch it and treat the track as completed.
-            # ------------------------------------------------------------------------
-            pass
+                time += vdur
 
     def add_timeline(self, timeline):
         # ------------------------------------------------------------------------
@@ -250,9 +244,8 @@ class PatternWriterMIDI:
         pass
 
     def write(self, filename="score.mid"):
-        fd = open(filename, "wb")
-        self.score.writeFile(fd)
-        fd.close()
+        with open(filename, "wb") as fd:
+            self.score.writeFile(fd)
 
 
 class FileOut(MidiFileOutputDevice, MidiOutputDevice):
@@ -261,19 +254,23 @@ class FileOut(MidiFileOutputDevice, MidiOutputDevice):
         MidiFileOutputDevice.__init__(self, filename=filename, ticks_per_beat=ticks_per_beat, super_init=False)
         MidiOutputDevice.__init__(self, device_name=device_name, send_clock=send_clock, virtual=virtual)
 
-    def note_off(self, note=60, channel=0, track_idx=0):
+    def note_off(self, note=60, channel=0, **kwargs):
+        track_idx = kwargs.get('track_idx', 0)
         MidiFileOutputDevice.note_off(self, note=note, channel=channel, track_idx=track_idx)
         MidiOutputDevice.note_off(self, note=note, channel=channel)
 
-    def note_on(self, note=60, velocity=64, channel=0, track_idx=0):
+    def note_on(self, note=60, velocity=64, channel=0, **kwargs):
+        track_idx = kwargs.get('track_idx', 0)
         MidiFileOutputDevice.note_on(self, note=note, velocity=velocity, channel=channel, track_idx=track_idx)
         MidiOutputDevice.note_on(self, note=note, velocity=velocity, channel=channel)
 
-    def program_change(self, program=0, channel=0, track_idx=0):
+    def program_change(self, program=0, channel=0, **kwargs):
+        track_idx = kwargs.get('track_idx', 0)
         MidiFileOutputDevice.program_change(self, program=program, channel=channel, track_idx=track_idx)
         MidiOutputDevice.program_change(self, program=program, channel=channel)
 
-    def control(self, control=0, value=0, channel=0, track_idx=0):
+    def control(self, control=0, value=0, channel=0, **kwargs):
+        track_idx = kwargs.get('track_idx', 0)
         MidiFileOutputDevice.control(self, control=control, value=value, channel=channel, track_idx=track_idx)
         MidiOutputDevice.control(self, control=control, value=value, channel=channel)
 
@@ -283,7 +280,7 @@ class FileOut(MidiFileOutputDevice, MidiOutputDevice):
 
     def aftertouch(self, control=0, value=0, channel=0, track_idx=0):
         MidiFileOutputDevice.aftertouch(self, value=value, channel=channel,
-                                                  track_idx=track_idx)
+                                        track_idx=track_idx)
 
     def polytouch(self, value=0, note=0, channel=0, track_idx=0):
         MidiFileOutputDevice.polytouch(self, value=value, note=note, channel=channel, track_idx=track_idx)

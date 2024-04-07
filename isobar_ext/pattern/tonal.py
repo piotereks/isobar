@@ -1,10 +1,13 @@
 from __future__ import annotations
-from .core import Pattern
-from ..scale import Scale
-from ..util import midi_note_to_frequency, midi_semitones_to_frequency_ratio
 
 import typing
 from typing import Iterable
+
+from .core import Pattern
+from .series import PSeries
+from ..key import Key
+from ..scale import Scale
+from ..util import midi_note_to_frequency, midi_semitones_to_frequency_ratio
 
 
 class PDegree(Pattern):
@@ -40,7 +43,7 @@ class PDegree(Pattern):
         ]
 
     def __repr__(self):
-        return "PDegree(%s, %s)" % (repr(self.degree), repr(self.scale))
+        return f"PDegree({repr(self.degree)}, {repr(self.scale)})"
 
     def __next__(self):
         degree = Pattern.value(self.degree)
@@ -71,15 +74,16 @@ class PFilterByKey(Pattern):
         self.key = key
 
     def __repr__(self):
-        return "PFilterByKey(%s, %s)" % (repr(self.pattern), repr(self.key))
+        return f"PFilterByKey({repr(self.pattern)}, {repr(self.key)})"
 
     def __next__(self):
         note = Pattern.value(self.pattern)
         key = Pattern.value(self.key)
-        if note in key:
-            return note
-        else:
-            return None
+        return note if note in key else None
+
+
+class PNearestNoteKey:
+    pass
 
 
 class PNearestNoteInKey(Pattern):
@@ -97,7 +101,7 @@ class PNearestNoteInKey(Pattern):
         self.key = key
 
     def __repr__(self):
-        return "PNearestNoteInKey(%s, %s)" % (repr(self.pattern), repr(self.key))
+        return f"PNearestNoteInKey({repr(self.pattern)}, {repr(self.key)})"
 
     def __next__(self):
         note = Pattern.value(self.pattern)
@@ -110,17 +114,15 @@ class PMidiNoteToFrequency(Pattern):
 
     abbreviation = "pnotetofreq"
 
-    def __init__(self, input):
-        self.input = input
+    def __init__(self, v_input):
+        self.input = v_input
 
     def __repr__(self):
-        return "PMidiNoteToFrequency(%s)" % repr(self.input)
+        return f"PMidiNoteToFrequency({repr(self.input)})"
 
     def __next__(self):
         note = Pattern.value(self.input)
-        if note is None:
-            return None
-        return midi_note_to_frequency(note)
+        return None if note is None else midi_note_to_frequency(note)
 
 
 class PMidiSemitonesToFrequencyRatio(Pattern):
@@ -132,11 +134,9 @@ class PMidiSemitonesToFrequencyRatio(Pattern):
 
     abbreviation = "psemistofreq"
 
-    def __init__(self, input):
-        self.input = input
+    def __init__(self, v_input):
+        self.input = v_input
 
     def __next__(self):
         note = Pattern.value(self.input)
-        if note is None:
-            return None
-        return midi_semitones_to_frequency_ratio(note)
+        return None if note is None else midi_semitones_to_frequency_ratio(note)

@@ -1,11 +1,12 @@
-from pythonosc.dispatcher import Dispatcher
-from pythonosc.osc_server import BlockingOSCUDPServer
-import threading
 import pickle
+import threading
 import time
 
-from isobar_ext.pattern.static import Globals
+from pythonosc.dispatcher import Dispatcher
+from pythonosc.osc_server import BlockingOSCUDPServer
+
 from isobar_ext.constants import DEFAULT_TICKS_PER_BEAT  # noqa: F401
+from isobar_ext.pattern.static import Globals
 
 
 class NetworkGlobalsReceiver:
