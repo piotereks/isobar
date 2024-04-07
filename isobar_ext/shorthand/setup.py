@@ -30,7 +30,7 @@ def track(name, **kwargs):
     }
     #--------------------------------------------------------------------------------
     # Unflatten the params list.
-    # This has some perils (e.g. 'amp' is used as an Event keyword but is 
+    # This has some perils (e.g. 'amp' is used as an Event keyword but is
     # also often used as a Patch parameter).
     #--------------------------------------------------------------------------------
     params = {}
@@ -43,7 +43,7 @@ def track(name, **kwargs):
         else:
             params[key] = kwargs[key]
             del kwargs[key]
-    
+
     if params:
         #--------------------------------------------------------------------------------
         # This caused the track to not generate any events when params was null,
@@ -59,6 +59,11 @@ def track(name, **kwargs):
     else:
         output_device = midi_output_device
 
+    # track = timeline.schedule(params=kwargs,
+    #                           name=name,
+    #                           replace=True,
+    #                           quantize=1,
+    #                           output_device=output_device)
     track = timeline.schedule(params=kwargs,
                               name=name,
                               replace=True,

@@ -610,12 +610,12 @@ class Timeline:
                 for existing_track in self.tracks:
                     if existing_track.name == name:
                         existing_track.update(param,
-                                              quantize=quantize,
-                                              delay=delay,
-                                              interpolate=interpolate)
-                        # TODO: Add unit test for update interpolate
-                        # TODO: Add unit test around this (returning the track?)
-                        return existing_track
+                                          quantize=quantize,
+                                          delay=delay,
+                                          interpolate=interpolate)
+                    # TODO: Add unit test for update interpolate
+                    # TODO: Add unit test around this (returning the track?)
+                    return existing_track
 
             if self.max_tracks and len(self.tracks) >= self.max_tracks:
                 raise TrackLimitReachedException(
