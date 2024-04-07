@@ -79,7 +79,7 @@ from ..pattern import PScaleLinLin as pscalelinlin  # noqa: F401
 from ..pattern import PSeq as pseq  # noqa: F401
 from ..pattern import PSequence as pseq  # noqa: F401
 from ..pattern import PSequenceAction as psequenceaction  # noqa: F401
-from ..pattern import PSeries as pseries  # noqa: F401
+from ..pattern.series import PSeries as pseries
 from ..pattern import PShuffle as pshuffle  # noqa: F401
 from ..pattern import PShuffleInput as pshuffleinput  # noqa: F401
 from ..pattern import PSkip as pskip  # noqa: F401

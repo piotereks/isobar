@@ -1,6 +1,7 @@
 import pytest
 
 import isobar_ext as iso
+import isobar_ext.pattern.series
 
 
 def test_psequence_ints():
@@ -19,7 +20,7 @@ def test_psequence_keys():
 
 
 def test_pseries():
-    a = iso.PSeries(2, iso.PSequence([1, 2]), iso.PConstant(5))
+    a = isobar_ext.pattern.series.PSeries(2, iso.PSequence([1, 2]), iso.PConstant(5))
     assert list(a) == [2, 3, 5, 6, 8]
 
 
@@ -70,7 +71,7 @@ def test_pstutter():
 
 
 def test_psubsequence():
-    a = iso.PSeries()
+    a = isobar_ext.pattern.series.PSeries()
     b = iso.PSubsequence(a, 4, 4)
     assert list(b) == [4, 5, 6, 7]
 
@@ -99,7 +100,7 @@ def test_preverse():
 
 
 def test_preset():
-    a = iso.PSeries(0, 1)
+    a = isobar_ext.pattern.series.PSeries(0, 1)
     b = iso.PReset(a, iso.PImpulse(4))
     c = iso.PSubsequence(b, 0, 10)
     assert list(c) == [0, 1, 2, 3, 0, 1, 2, 3, 0, 1]

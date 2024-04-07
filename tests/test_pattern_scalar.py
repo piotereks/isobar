@@ -1,4 +1,5 @@
 import isobar_ext as iso
+import isobar_ext.pattern.series
 
 
 def test_pchanged():
@@ -41,7 +42,7 @@ def test_pmap():
 
 def test_pmap_args():
     a = iso.PSequence([4, 5, 1, -2, 1, -1.5], 1)
-    b = iso.PMap(a, lambda x, y: x + y, iso.PSeries())
+    b = iso.PMap(a, lambda x, y: x + y, isobar_ext.pattern.series.PSeries())
     assert list(b) == [4, 6, 3, 1, 5, 3.5]
 
 

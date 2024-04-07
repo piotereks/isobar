@@ -5,6 +5,7 @@ import math
 import pytest
 
 import isobar_ext as iso
+import isobar_ext.pattern.series
 from . import dummy_timeline
 
 
@@ -13,7 +14,7 @@ def test_event_control_no_interpolation(dummy_timeline):
     Simple case: schedule a series of regularly-spaced control points.
     Output device should receive discrete control events.
     """
-    control_series = iso.PSeries(start=1, step=2, length=3)
+    control_series = isobar_ext.pattern.series.PSeries(start=1, step=2, length=3)
     dummy_timeline.schedule({
         iso.EVENT_CONTROL: 0,
         iso.EVENT_VALUE: control_series,

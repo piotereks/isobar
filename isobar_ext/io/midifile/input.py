@@ -31,7 +31,7 @@ class MidiFileInputDevice:
 
         if not isinstance(objects, Iterable):
             objects = [objects]
-        text = [(type(o), o.__dict__) for o in objects]
+        # text = [(type(o), o.__dict__) for o in objects]
         midi_track0 = timeline_inner.output_device.miditrack[0]
 
         for obj in objects:
@@ -79,18 +79,18 @@ class MidiFileInputDevice:
             % (self.filename, self.midi_reader.ticks_per_beat)
         )
         any_track_with_notes = list(
-            filter(lambda track: any(message.type == "note_on" for message in track),
+            filter(lambda track_in: any(message.type == "note_on" for message in track_in),
                    self.midi_reader.tracks)
         )
         if not any_track_with_notes and not note_tracks:
             raise ValueError("Could not find any tracks with note data")
 
         tracks_note_dict = []
-        channel_calc = 0
+        # channel_calc = 0
         for track_idx, track in enumerate(note_tracks):
             # track_idx = note_tracks.index(track)
             notes = []
-            offset = 0
+            # offset = 0
             offset_int = 0
             for event in track:
                 if event.type == 'note_on' and (event.velocity > 0 or event.note == 0):
@@ -266,11 +266,11 @@ class MidiFileInputDevice:
             for i, t in enumerate(non_meta_times):
                 t = non_meta_times[i]
                 notes = non_meta_by_time[t]
-                if i < len(non_meta_times) - 1:
-                    next_time = non_meta_times[i + 1]
-                else:
-                    next_time = t + max(
-                        [getattr(nt, 'duration') for nt in notes if hasattr(nt, 'duration')] or [1.0])
+                # if i < len(non_meta_times) - 1:
+                #     next_time = non_meta_times[i + 1]
+                # else:
+                #     next_time = t + max(
+                #         [getattr(nt, 'duration') for nt in notes if hasattr(nt, 'duration')] or [1.0])
 
                 # time_until_next_note = next_time - t
                 if len(notes) > 1:
@@ -283,12 +283,12 @@ class MidiFileInputDevice:
             for i, t in enumerate(action_times):
                 t = action_times[i]
                 notes = action_by_time[t]
-                if i < len(action_times) - 1:
-                    next_time = action_times[i + 1]
-                else:
-                    next_time = t + max([nt.duration for nt in notes if hasattr(nt, 'duration')] or [1.0])
+                # if i < len(action_times) - 1:
+                #     next_time = action_times[i + 1]
+                # else:
+                #     next_time = t + max([nt.duration for nt in notes if hasattr(nt, 'duration')] or [1.0])
 
-                time_until_next_note = next_time - t
+                # time_until_next_note = next_time - t
                 if len(notes) > 1:
                     messages = tuple(nt for nt in notes)
                     create_lam_function(action_dict, messages, track_idx)
@@ -309,7 +309,7 @@ class MidiFileInputDevice:
                 # ------------------------------------------------------------------------
                 if time_until_next_note:
                     if len(notes) > 1:
-                        messages = tuple(nt for nt in notes if not isinstance(nt, MidiNote))
+                        # messages = tuple(nt for nt in notes if not isinstance(nt, MidiNote))
                         note_tuple = tuple(
                             nt.pitch for nt in notes if isinstance(nt, MidiNote))
                         if len(note_tuple):
@@ -423,4 +423,4 @@ class MidiFileInputDevice:
 
             return track
 
-        return sorted(tracks_note_dict, key=lambda t: 0 if t.get(EVENT_ACTION, None) else 1)
+        return sorted(tracks_note_dict, key=lambda tt: 0 if tt.get(EVENT_ACTION, None) else 1)

@@ -5,6 +5,7 @@ import time
 import pytest
 import platform
 import isobar_ext as iso
+import isobar_ext.pattern.series
 from isobar_ext.io import DummyOutputDevice, MidiOutputDevice
 from . import dummy_timeline
 
@@ -234,7 +235,7 @@ def test_timeline_schedule_default_quantize_override(dummy_timeline):
 
 def test_timeline_schedule_count(dummy_timeline):
     dummy_timeline.schedule({
-        iso.EVENT_NOTE: iso.PSeries(0, 1),
+        iso.EVENT_NOTE: isobar_ext.pattern.series.PSeries(0, 1),
         iso.EVENT_DURATION: 1
     }, count=4)
     dummy_timeline.run()

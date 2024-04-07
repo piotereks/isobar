@@ -24,17 +24,20 @@ class OSCOutputDevice(OutputDevice):
         try:
             self.osc = SimpleUDPClient(host, port)
 
-        except NameError:
-            raise Exception("python-osc must be installed")
+        except NameError as e:
+            raise Exception("python-osc must be installed") from e
 
-    def note_on(self, note=60, velocity=64, channel=0):
-        self.osc.send_message("/note", velocity, channel)
+    def note_on(self, note=60, velocity=64, channel=0, **kwargs):
+        # self.osc.send_message("/note", velocity, channel)
+        self.osc.send_message("/note", velocity)
 
-    def note_off(self, note=60, channel=0):
-        self.osc.send_message("/note", 0, channel)
+    def note_off(self, note=60, channel=0, **kwargs):
+        # self.osc.send_message("/note", 0, channel)
+        self.osc.send_message("/note", 0)
 
-    def control(self, control, value, channel=0):
-        self.osc.send_message("/control", value, channel)
+    def control(self, control, value, channel=0, **kwargs):
+        # self.osc.send_message("/control", value, channel)
+        self.osc.send_message("/control", value)
 
     def send(self, address, params=None):
         if params is not None:

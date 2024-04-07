@@ -1,6 +1,7 @@
 import pytest
 
 import isobar_ext as iso
+import isobar_ext.pattern.series
 
 
 @pytest.fixture(autouse=True)
@@ -46,7 +47,7 @@ def test_pcoin():
 
 
 def test_pwalk():
-    a = iso.PRandomWalk([0, 2, 4, 5, 12], min=iso.PConstant(1), max=iso.PConstant(2))
+    a = iso.PRandomWalk([0, 2, 4, 5, 12], v_min=iso.PConstant(1), v_max=iso.PConstant(2))
     expected = [4, 0, 5, 0, 4, 5, 2, 4, 12, 5, 12, 4, 2, 5, 12, 4, 0, 12, 2, 4]
     a.seed(0)
     assert a.nextn(20) == expected
@@ -102,7 +103,7 @@ def test_pshuffle():
 
 
 def test_pshuffleevery():
-    a = iso.PShuffleInput(iso.PSeries(0, 1), 4)
+    a = iso.PShuffleInput(isobar_ext.pattern.series.PSeries(0, 1), 4)
     expected = [2, 0, 1, 3, 4, 5, 7, 6, 8, 10, 9, 11, 13, 12, 15, 14, 18, 16, 19, 17]
     a.seed(0)
     assert a.nextn(20) == expected
@@ -111,7 +112,7 @@ def test_pshuffleevery():
 
 
 def test_pskip():
-    a = iso.PSkip(iso.PSeries(0, 1), 0.5)
+    a = iso.PSkip(isobar_ext.pattern.series.PSeries(0, 1), 0.5)
     expected = [None, None, 2, 3, None, 5, None, 7, 8, None, None, None, 12, None, None, 15, None, None, None, None]
     a.seed(0)
     assert a.nextn(20) == expected
@@ -120,7 +121,7 @@ def test_pskip():
 
 
 def test_pskip_regular():
-    a = iso.PSkip(iso.PSeries(0, 1), 0.5, True)
+    a = iso.PSkip(isobar_ext.pattern.series.PSeries(0, 1), 0.5, True)
     expected = [None, 1, None, 3, None, 5, None, 7, None, 9, None, 11, None, 13, None, 15, None, 17, None, 19]
     a.seed(0)
     assert a.nextn(20) == expected
@@ -138,7 +139,7 @@ def test_pflipflop():
 
 
 def test_pswitchone():
-    a = iso.PSwitchOne(iso.PSeries(0, 1), 4)
+    a = iso.PSwitchOne(isobar_ext.pattern.series.PSeries(0, 1), 4)
     expected = [0, 1, 2, 3, 0, 1, 3, 2, 0, 1, 2, 3, 3, 1, 2, 0, 3, 2, 1, 0]
     a.seed(0)
     assert a.nextn(20) == expected

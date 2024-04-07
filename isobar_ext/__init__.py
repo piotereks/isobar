@@ -8,6 +8,7 @@ For documentation, please see:
 
     https://github.com/piotereks/isobar-ext
 
+
 For a full list of all Pattern classes:
 
     pydoc3 isobar_ext.pattern
@@ -17,7 +18,7 @@ For a full list of all Pattern classes:
 # flake8: noqa
 
 __version__ = "0"
-__author__ = "Daniel Jones <http://www.erase.net/>"
+__author__ = "Piotr Sakowski"
 
 from .chord import *
 from .constants import *
