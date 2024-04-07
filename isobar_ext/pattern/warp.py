@@ -46,7 +46,7 @@ class PWInterpolate(PWarp):
             # ------------------------------------------------------------------------
             length = Pattern.value(self.length)
             self.dv = (self.target - self.value) / (
-                self.timeline.ticks_per_beat * length
+                    self.timeline.ticks_per_beat * length
             )
 
         self.value = self.value + self.dv

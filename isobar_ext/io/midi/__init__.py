@@ -14,6 +14,7 @@ def get_midi_output_names():
     output_names = mido.get_output_names()
     return output_names
 
+
 def get_midi_input_names():
     """
     Query MIDI input device names.
@@ -23,6 +24,7 @@ def get_midi_input_names():
     """
     input_names = mido.get_input_names()
     return input_names
+
 
 __all__ = ["MidiInputDevice", "MidiOutputDevice", "get_midi_input_names", "get_midi_output_names"]
 

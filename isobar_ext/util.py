@@ -185,11 +185,11 @@ def frequency_ratio_to_midi_semitones(frequency_ratio) -> float:
 
 
 def scale_lin_exp(
-    value: float,
-    from_min: float = 0,
-    from_max: float = 1,
-    to_min: float = 1,
-    to_max: float = 10,
+        value: float,
+        from_min: float = 0,
+        from_max: float = 1,
+        to_min: float = 1,
+        to_max: float = 10,
 ) -> float:
     """
     Map a value on a linear scale to an exponential scale.
@@ -212,11 +212,11 @@ def scale_lin_exp(
 
 
 def scale_lin_lin(
-    value: float,
-    from_min: float = 0,
-    from_max: float = 1,
-    to_min: float = 0,
-    to_max: float = 1,
+        value: float,
+        from_min: float = 0,
+        from_max: float = 1,
+        to_min: float = 0,
+        to_max: float = 1,
 ) -> float:
     """
     Map a value on a linear scale to a linear scale.
@@ -247,7 +247,7 @@ def bipolar_diverge(maximum: int) -> list[int]:
 
 
 def filter_tone_row(
-    source: list[int], target: list[int], bend_limit: int = 7
+        source: list[int], target: list[int], bend_limit: int = 7
 ) -> list[int]:
     """
     Filters the notes in <source> by the permitted notes in <target>.
@@ -285,7 +285,7 @@ def make_clock_multiplier(output_clock_rate: int, input_clock_rate: int) -> Gene
     if output_clock_rate and input_clock_rate:
         multiple = output_clock_rate / input_clock_rate
     if (multiple > 1 and int(multiple) != multiple) or (
-        multiple < 1 and 1 / multiple != int(1 / multiple)
+            multiple < 1 and 1 / multiple != int(1 / multiple)
     ):
         raise ClockException(
             "Cannot sync output device (clock rates must integer multiples of each other)"

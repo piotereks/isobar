@@ -3,6 +3,7 @@
 import isobar_ext as iso
 from . import dummy_timeline
 
+
 class DummySuperColliderOutputDevice(iso.OutputDevice):
     def __init__(self):
         super().__init__()
@@ -11,11 +12,12 @@ class DummySuperColliderOutputDevice(iso.OutputDevice):
     def create(self, name, params):
         self.events.append([name, params])
 
+
 def test_event_supercollider(dummy_timeline):
     output_device = DummySuperColliderOutputDevice()
     dummy_timeline.output_device = output_device
     dummy_timeline.schedule({
-        iso.EVENT_SUPERCOLLIDER_SYNTH: iso.PSequence([ "foo", "bar" ]),
+        iso.EVENT_SUPERCOLLIDER_SYNTH: iso.PSequence(["foo", "bar"]),
         iso.EVENT_SUPERCOLLIDER_SYNTH_PARAMS: {
             "buffer": iso.PSequence([1, 2]),
             "rate": iso.PSequence([0.5, 1, 2], 1)

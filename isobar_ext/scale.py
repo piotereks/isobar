@@ -8,10 +8,11 @@ from .util import normalize
 
 class Scale(object):
     dict = {}
+
     # _scales = []
 
     def __init__(
-        self, semitones=None, name="unnamed scale", octave_size=12, semitones_down=None
+            self, semitones=None, name="unnamed scale", octave_size=12, semitones_down=None
     ):
         self.scale_down = False
 
@@ -42,7 +43,7 @@ class Scale(object):
 
     def __eq__(self, other):
         return (
-            self.semitones == other.semitones and self.octave_size == other.octave_size
+                self.semitones == other.semitones and self.octave_size == other.octave_size
         )
 
     def __contains__(self, semitone):
@@ -158,6 +159,7 @@ class Scale(object):
         key = random.choice(list(Scale.dict.keys()))
         return Scale.dict[key]
 
+
 # ------------------------------------------------------------------------
 current_directory = Path(__file__).resolve().parent
 config_file = current_directory / "scales.json"
@@ -183,11 +185,11 @@ Scale.default = Scale.major
 
 class WeightedScale(Scale):
     def __init__(
-        self,
-        semitones=[0, 2, 4, 5, 7, 9, 11],
-        weights=[1 / 7.0] * 7,
-        name="major",
-        octave_size=12,
+            self,
+            semitones=[0, 2, 4, 5, 7, 9, 11],
+            weights=[1 / 7.0] * 7,
+            name="major",
+            octave_size=12,
     ):
         Scale.__init__(self, semitones, name=name, octave_size=octave_size)
         self.weights = weights

@@ -7,6 +7,7 @@ def test_scale_get():
     assert [scale.get(x, scale_down=False) for x in range(7)] == [0, 2, 4, 6, 8, 10, 12]
     assert [scale.get(x, scale_down=True) for x in range(8)] == [0, 1, 3, 5, 7, 9, 11, 12]
 
+
 def test_single_key_index_of():
     scalex = iso.Scale.major
     scale = iso.Scale(semitones=[0, 2, 4, 6, 8, 10], name="test_scale", octave_size=12,
@@ -18,7 +19,6 @@ def test_single_key_index_of():
 
         x = key.scale.indexOf(202)
         x = key.scale.indexOf(-202)
-
 
         # for t in range(-200, 200):
         for t in [-200, 200]:
@@ -67,6 +67,7 @@ def test_key_index_of():
                 assert index_pattern == list(
                     range(rng_start + len(key.scale.semitones_down) - 1, rng_start - 1, -1)), "Scale Down IndexOf error"
                 assert result_pattern == pdegree_pattern, f"Scale Down PDegree error {(key.tonic,key.scale.name)=}"
+
 
 def test_generic_get_indexOf():
     scale = iso.Scale(semitones=[0, 2, 4, 6, 8, 10], name="test_scale", octave_size=12,

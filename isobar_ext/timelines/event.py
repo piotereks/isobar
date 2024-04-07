@@ -43,9 +43,9 @@ class Event:
             warning_msg = f"Cannot specify both '{parm[0]}' and '{parm[1]}.'"
             if EVENT_ACTION in (parm):
                 warning_msg += (
-                    "\nEVENT_ACTION disables EVENT_NOTE and EVENT_DEGREE.\n" +
-                    "Use separate timeline.schedule for EVENT_ACTION" +
-                    " and separate for EVENT_NOTE or EVENT_DEGREE"
+                        "\nEVENT_ACTION disables EVENT_NOTE and EVENT_DEGREE.\n" +
+                        "Use separate timeline.schedule for EVENT_ACTION" +
+                        " and separate for EVENT_NOTE or EVENT_DEGREE"
                 )
             warnings.warn(warning_msg, Warning)
 
@@ -149,12 +149,12 @@ class Event:
             if EVENT_TYPE in event_values:
                 self.type = event_values[EVENT_TYPE]
             elif type(self.patch).__name__ == "PatchSpec" or isinstance(
-                self.patch, type
+                    self.patch, type
             ):
                 self.type = EVENT_TYPE_PATCH_CREATE
             elif (
-                hasattr(self.patch, "trigger_node") and
-                self.patch.trigger_node is not None
+                    hasattr(self.patch, "trigger_node") and
+                    self.patch.trigger_node is not None
             ):
                 self.type = EVENT_TYPE_PATCH_TRIGGER
             else:

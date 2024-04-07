@@ -34,11 +34,11 @@ class Action:
 
 class Timeline:
     def __init__(self,
-            tempo: float = DEFAULT_TEMPO,
-            output_device: Any = None,
-            clock_source: Any = None,
-            ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
-    ):
+                 tempo: float = DEFAULT_TEMPO,
+                 output_device: Any = None,
+                 clock_source: Any = None,
+                 ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
+                 ):
         """
         A Timeline object encapsulates a number of Tracks, each of which
         represents a sequence of note or control events.
@@ -593,7 +593,6 @@ class Timeline:
 
             params_list2.append(param)
 
-
         # --------------------------------------------------------------------------------
         # If replace=True is specified, updated the params of any existing track
         # with the same name. If none exists, proceed to create it as usual.
@@ -609,9 +608,9 @@ class Timeline:
                 for existing_track in self.tracks:
                     if existing_track.name == name:
                         existing_track.update(param,
-                                          quantize=quantize,
-                                          delay=delay,
-                                          interpolate=interpolate)
+                                              quantize=quantize,
+                                              delay=delay,
+                                              interpolate=interpolate)
                     # TODO: Add unit test for update interpolate
                     # TODO: Add unit test around this (returning the track?)
                     return existing_track
@@ -631,7 +630,7 @@ class Timeline:
                 log.info("Timeline: Scheduled new track (total tracks: %d)" % len(self.tracks))
 
             if not bool(event_args) and sel_track_idx is not None:
-            # if not bool(event_args):
+                # if not bool(event_args):
                 event_args = {"track_idx": sel_track_idx}
                 if not bool(param.get(EVENT_ACTION_ARGS, {})):
                     param[EVENT_ACTION_ARGS] = event_args
@@ -654,7 +653,6 @@ class Timeline:
 
                 track.update(copy.copy(param), quantize=quantize, delay=delay or extra_delay)
             tracks_list.append(track)
-
 
             start_track(track)
 

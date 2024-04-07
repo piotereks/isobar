@@ -9,7 +9,8 @@ from ...exceptions import DeviceNotFoundException
 
 log = logging.getLogger(__name__)
 
-class MidiOutputDevice (OutputDevice):
+
+class MidiOutputDevice(OutputDevice):
     def __init__(self, device_name=None, send_clock=False, virtual=False):
         """
         Create a MIDI output device.

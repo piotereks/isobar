@@ -45,7 +45,7 @@ class isobar_extMIDIManager:
 
 class PMIDIControl(Pattern):
     def __init__(
-        self, control_index: int = 0, normalized: bool = False, default: int = None
+            self, control_index: int = 0, normalized: bool = False, default: int = None
     ):
         self.control_index: int = control_index
         self.value: Optional[int] = default

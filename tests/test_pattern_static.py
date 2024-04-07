@@ -15,6 +15,7 @@ def test_pglobals():
     assert next(pattern) == iso.Key("C", "major")
     assert next(pattern) == iso.Key("C", "major")
 
+
 def test_pstaticpattern(dummy_timeline):
     pattern = iso.PStaticPattern(pattern=iso.PSequence([1, 2, 3, 4], 1),
                                  element_duration=iso.PSequence([1, 2, 0, 1]))
@@ -27,6 +28,7 @@ def test_pstaticpattern(dummy_timeline):
     event_notes = [event[2] for event in dummy_timeline.output_device.events]
     assert event_times == [0, 1, 1, 2, 2, 3, 3, 4]
     assert event_notes == [1, 1, 2, 2, 2, 2, 4, 4]
+
 
 def test_pcurrenttime(dummy_timeline):
     pattern = iso.PCurrentTime()

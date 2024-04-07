@@ -82,7 +82,7 @@ class MidiFileInputDevice:
         )
         any_track_with_notes = list(
             filter(lambda track: any(message.type == "note_on" for message in track),
-                self.midi_reader.tracks)
+                   self.midi_reader.tracks)
         )
         if not any_track_with_notes and not note_tracks:
             raise ValueError("Could not find any tracks with note data")
@@ -108,7 +108,8 @@ class MidiFileInputDevice:
 
                     offset_int += event.time
                     offset = offset_int / self.midi_reader.ticks_per_beat
-                    note_int = MidiNote( pitch=event.note, velocity=event.velocity, location=offset, channel=event.channel)
+                    note_int = MidiNote(pitch=event.note, velocity=event.velocity, location=offset,
+                                        channel=event.channel)
                     notes.append(note_int)
                 # elif event.type == 'note_off' or (event.type == 'note_on' and event.velocity == 0):
                 elif event.type == 'note_off' or (event.type == 'note_on'):
@@ -417,7 +418,7 @@ class MidiFileInputDevice:
 
         if not multi_track_file:
             track = next(t for t in tracks_note_dict if t.get(EVENT_NOTE, None))
-            if EVENT_ACTION_ARGS in  track:
+            if EVENT_ACTION_ARGS in track:
                 track[EVENT_ACTION_ARGS].pop('track_idx', None)
                 if not bool(track[EVENT_ACTION_ARGS]):
                     track.pop(EVENT_ACTION_ARGS, None)
@@ -425,4 +426,3 @@ class MidiFileInputDevice:
             return track
 
         return sorted(tracks_note_dict, key=lambda t: 0 if t.get(EVENT_ACTION, None) else 1)
-

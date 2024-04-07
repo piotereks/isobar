@@ -25,10 +25,10 @@ except ModuleNotFoundError as e:
 
 class AbletonLinkClock(Clock):
     def __init__(
-        self,
-        clock_target: Any = None,
-        tempo: float = DEFAULT_TEMPO,
-        ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
+            self,
+            clock_target: Any = None,
+            tempo: float = DEFAULT_TEMPO,
+            ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
     ):
         self.link_client = link.Link(120)
         self.link_client.enabled = True

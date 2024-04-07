@@ -32,6 +32,8 @@ def test_event_control_no_interpolation(dummy_timeline):
         [1, "control", 0, 3, 9, 0],
         [2, "control", 0, 5, 9, 0]
     ]
+
+
 def test_event_control_linear_interpolation(dummy_timeline):
     """
     Linear interpolation between control points.
@@ -47,12 +49,14 @@ def test_event_control_linear_interpolation(dummy_timeline):
     dummy_timeline.run()
 
     expected_series = [1 + 2 * n / dummy_timeline.ticks_per_beat for n in range(dummy_timeline.ticks_per_beat)] + \
-                      [3 - 1 * n / (dummy_timeline.ticks_per_beat // 2) for n in range(dummy_timeline.ticks_per_beat // 2)] + \
+                      [3 - 1 * n / (dummy_timeline.ticks_per_beat // 2) for n in
+                       range(dummy_timeline.ticks_per_beat // 2)] + \
                       [2]
     values = [event[3] for event in dummy_timeline.output_device.events]
 
     assert len(dummy_timeline.output_device.events) == (dummy_timeline.ticks_per_beat * 1.5) + 1
     assert expected_series == pytest.approx(values, rel=0.01)
+
 
 def test_event_control_linear_interpolation_zero_duration(dummy_timeline):
     control_series = iso.PSequence([0, 1])
@@ -68,6 +72,7 @@ def test_event_control_linear_interpolation_zero_duration(dummy_timeline):
     expected_series = [0.1 * n for n in range(0, 11)] + [0.1 * n for n in range(1, 11)]
     values = [event[3] for event in dummy_timeline.output_device.events]
     assert expected_series == pytest.approx(values, rel=0.0000001)
+
 
 def test_event_control_cosine_interpolation(dummy_timeline):
     """

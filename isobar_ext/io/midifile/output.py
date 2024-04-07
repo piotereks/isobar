@@ -86,7 +86,6 @@ class MidiFileOutputDevice(OutputDevice):
     def tick(self):
         self.time = list(map(lambda x: x + (1.0 / self.ticks_per_beat), self.time))
 
-
     def _msg_deduplication(self):
         new_mid = MidiFile()
 
@@ -123,7 +122,6 @@ class MidiFileOutputDevice(OutputDevice):
 
         self.midifile.tracks = new_mid.tracks
         self.miditrack = new_mid.tracks
-
 
     def note_on(self, note=60, velocity=64, channel=0, track_idx=0):
         # ------------------------------------------------------------------------
@@ -193,7 +191,7 @@ class MidiFileOutputDevice(OutputDevice):
             dt = self.time[track] - self.last_event_time[track]
             dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
             self.miditrack[track].append(
-                msg = Message('aftertouch', value=value, channel=int(channel)))
+                msg=Message('aftertouch', value=value, channel=int(channel)))
             self.last_event_time[track] = self.time[track]
 
     def polytouch(self, value=0, note=0, channel=0, track_idx=0):
@@ -203,8 +201,9 @@ class MidiFileOutputDevice(OutputDevice):
             dt = self.time[track] - self.last_event_time[track]
             dt_ticks = int(round(dt * self.midifile.ticks_per_beat))
             self.miditrack[track].append(
-                msg = Message('polytouch', value=int(value), note=note, channel=int(channel)))
+                msg=Message('polytouch', value=int(value), note=note, channel=int(channel)))
             self.last_event_time[track] = self.time[track]
+
 
 class PatternWriterMIDI:
     """Writes a pattern to a MIDI file.
@@ -283,7 +282,7 @@ class FileOut(MidiFileOutputDevice, MidiOutputDevice):
 
     def aftertouch(self, control=0, value=0, channel=0, track_idx=0):
         MidiFileOutputDevice.aftertouch(self, value=value, channel=channel,
-                                                  track_idx=track_idx)
+                                        track_idx=track_idx)
 
     def polytouch(self, value=0, note=0, channel=0, track_idx=0):
         MidiFileOutputDevice.polytouch(self, value=value, note=note, channel=channel, track_idx=track_idx)

@@ -94,11 +94,11 @@ class PBrown(PStochasticPattern):
     """
 
     def __init__(
-        self,
-        initial_value: float = 0,
-        step: float = 0.1,
-        min: float = -sys.maxsize,
-        max: float = sys.maxsize,
+            self,
+            initial_value: float = 0,
+            step: float = 0.1,
+            min: float = -sys.maxsize,
+            max: float = sys.maxsize,
     ):
         """
         Args:
@@ -196,7 +196,7 @@ class PRandomWalk(PStochasticPattern):
     """
 
     def __init__(
-        self, values: list = [], min: int = 1, max: int = 1, wrap: bool = True
+            self, values: list = [], min: int = 1, max: int = 1, wrap: bool = True
     ):
         """
 

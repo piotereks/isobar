@@ -30,6 +30,7 @@ def test_io_midifile_write(dummy_timeline):
 
     os.unlink("output.mid")
 
+
 def test_io_midifile_pdict_save(dummy_timeline):
     events = {
         iso.EVENT_NOTE: iso.PSequence([60, 62, 64, 67], 1),

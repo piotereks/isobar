@@ -39,4 +39,3 @@ class OutputDevice:
 
     def create(self, patch_spec, patch_params, output=None):
         pass
-

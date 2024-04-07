@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 class Clock:
     def __init__(
-        self,
-        clock_target: Any = None,
-        tempo: float = DEFAULT_TEMPO,
-        ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
+            self,
+            clock_target: Any = None,
+            tempo: float = DEFAULT_TEMPO,
+            ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
     ):
         """
         A Clock generates tick events at a regular interval, defined by the `ticks_per_beat` property.

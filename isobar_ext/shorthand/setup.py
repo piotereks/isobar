@@ -28,11 +28,11 @@ def track(name, **kwargs):
         "quantize": 1,
         "interpolate": None,
     }
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     # Unflatten the params list.
     # This has some perils (e.g. 'amp' is used as an Event keyword but is
     # also often used as a Patch parameter).
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     params = {}
     for key in list(kwargs.keys()):
         if key in track_parameters:
@@ -45,15 +45,15 @@ def track(name, **kwargs):
             del kwargs[key]
 
     if params:
-        #--------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------
         # This caused the track to not generate any events when params was null,
         # not sure why
-        #--------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------
         kwargs["params"] = params
 
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     # Automatically select the appropriate output device based on the event type.
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     if "patch" in kwargs:
         output_device = signalflow_output_device
     else:
@@ -69,12 +69,12 @@ def track(name, **kwargs):
                               replace=True,
                               output_device=output_device,
                               **track_parameters)
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     # Evaluating a cell with a track() command with mute() appended to it causes
     # the track to be silenced.
     #
     # Re-evaluating the cell without mute() should then unmute the track.
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     track.is_muted = False
 
     return track

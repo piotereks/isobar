@@ -10,6 +10,7 @@ from ...exceptions import DeviceNotFoundException
 
 log = logging.getLogger(__name__)
 
+
 class MidiInputDevice:
     def __init__(self, device_name=None, clock_target=None, virtual=False):
         """

@@ -10,6 +10,7 @@ def test_key_defaults():
     assert a.get(0) == 0
     assert a.get(1) == 2
 
+
 def test_key_eq():
     a = iso.Key()
     b = iso.Key(0, iso.Scale([0, 2, 4, 5, 7, 9, 11]))
@@ -19,6 +20,7 @@ def test_key_eq():
     d = iso.Key(1, iso.Scale([0, 2, 4, 5, 7, 9, 11]))
     assert a != d
 
+
 def test_key_invalid():
     with pytest.raises(iso.UnknownNoteName):
         a = iso.Key("X", "major")
@@ -27,6 +29,7 @@ def test_key_invalid():
     with pytest.raises(iso.UnknownScaleName):
         a = iso.Key("C", "mundo")
 
+
 def test_key_get():
     a = iso.Key("C", "major")
     assert a.get(0) == a[0] == 0
@@ -34,6 +37,7 @@ def test_key_get():
     assert a.get(2) == a[2] == 4
     assert a.get(7) == a[7] == 12
     assert a.get(-1) == a[-1] == -1
+
 
 def test_key_contains():
     a = iso.Key("C", "major")
@@ -47,9 +51,11 @@ def test_key_contains():
     assert -1 in a
     assert None in a
 
+
 def test_key_semitones():
     a = iso.Key("C", "minor")
     assert a.semitones == [0, 2, 3, 5, 7, 8, 10]
+
 
 def test_key_nearest_note():
     a = iso.Key("C", iso.Scale([0, 2, 3, 5, 7, 9]))
@@ -75,18 +81,21 @@ def test_key_nearest_note():
 
     a = iso.Key("F#", "major")
     # assert a.nearest_note(0) == 1
-    assert a.nearest_note(0) == -1  #  Preference is on lower note if distance is the same
+    assert a.nearest_note(0) == -1  # Preference is on lower note if distance is the same
     assert a.nearest_note(6) == 6
     assert a.nearest_note(17) == 17
     assert a.nearest_note(18) == 18
 
+
 def test_key_voiceleading():
     pass
+
 
 def test_key_distance():
     a = iso.Key("C", "minor")
     b = iso.Key("C", "major")
     assert a.distance(b) == 3
+
 
 def test_key_random():
     a = iso.Key.random()

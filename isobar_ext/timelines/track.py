@@ -24,7 +24,7 @@ class NoteOffEvent:
     timestamp: float
     note: int
     channel: int
-    track_idx : int
+    track_idx: int
 
 
 def get_track_idx(event_obj):
@@ -38,6 +38,7 @@ def get_track_idx(event_obj):
             else:
                 return trk_idx
     return track_idx
+
 
 class Track:
     def __init__(
@@ -88,7 +89,7 @@ class Track:
         self.remove_when_done: bool = remove_when_done
         self.on_event_callbacks: list[Callable] = []
 
-    def __getattr__(self, item, default = None):
+    def __getattr__(self, item, default=None):
         # return self.event_stream[item]
         return getattr(self.event_stream, 'item', default)
 
@@ -192,8 +193,6 @@ class Track:
     def tick_duration(self) -> float:
         """Tick duration, in beats."""
         return self.timeline.tick_duration
-
-
 
     def process_note_offs(self):
         # ----------------------------------------------------------------------
@@ -638,7 +637,7 @@ class Track:
         # if not (track_idx := get_track_idx(self.event_stream)):
         if track_idx is None:
             if getattr(event, 'fields', {}).get('args', {}).get('track_idx') is not None:
-            # if event.fields.get('args').get('track_idx') is not None:
+                # if event.fields.get('args').get('track_idx') is not None:
                 track_idx = event.fields['args']['track_idx']
                 self.track_idx = track_idx
         # else:

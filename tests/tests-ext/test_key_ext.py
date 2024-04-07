@@ -67,9 +67,9 @@ def test_key_contains_ext():
     a = iso.Key("C", scale)
 
     assert 0 in a
-    assert not(a.__contains__(semitone=1, scale_down=True))
+    assert not (a.__contains__(semitone=1, scale_down=True))
     assert a.__contains__(semitone=1, scale_down=False)
-    assert not(a.__contains__(semitone=7, scale_down=True))
+    assert not (a.__contains__(semitone=7, scale_down=True))
     assert a.__contains__(semitone=7, scale_down=False)
-    assert not(a.__contains__(semitone=-1, scale_down=True))
+    assert not (a.__contains__(semitone=-1, scale_down=True))
     assert a.__contains__(semitone=-1, scale_down=False)

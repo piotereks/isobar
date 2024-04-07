@@ -79,8 +79,6 @@ class MidiMessageControl:
         self._time = value
 
 
-
-
 class MidiMessageProgram:
     def __init__(self, channel, program, location, time=0, track_idx=0):
         # channel 0..15
@@ -92,6 +90,7 @@ class MidiMessageProgram:
         self.time = time
         # track_idx >=0
         self.track_idx = track_idx
+
     @property
     def channel(self):
         return self._channel
@@ -141,6 +140,7 @@ class MidiMessageProgram:
         if not isinstance(value, int) or value < 0:
             raise ValueError("Invalid track_idx value. Must be a non-negative integer.")
         self._track_idx = value
+
 
 class MidiMessagePitch:
     def __init__(self, channel, pitch, location, time=0, track_idx=0):
@@ -199,6 +199,7 @@ class MidiMessagePitch:
         if not isinstance(value, int) or value < 0:
             raise ValueError("Invalid track_idx value. Must be a non-negative integer.")
         self._track_idx = value
+
 
 class MidiMessagePoly:
     def __init__(self, channel, note, value, location, time=0, track_idx=0):
@@ -268,6 +269,7 @@ class MidiMessagePoly:
         if not isinstance(value, int) or value < 0:
             raise ValueError("Invalid track_idx value. Must be a non-negative integer.")
         self._track_idx = value
+
 
 class MidiMessageAfter:
     def __init__(self, channel, value, location, time=0, track_idx=0):
@@ -413,7 +415,7 @@ class MidiMetaMessageTimeSig(MetaMessageInterface):
 
     @denominator.setter
     def denominator(self, value):
-        if not isinstance(value, int) or value <= 0 or value & (value - 1) != 0 or value > 2**255:
+        if not isinstance(value, int) or value <= 0 or value & (value - 1) != 0 or value > 2 ** 255:
             raise ValueError("Invalid denominator value. Denominator must be a power of 2"
                              "between 1 and 2**255")
         self._denominator = value
@@ -424,7 +426,7 @@ class MidiMetaMessageTimeSig(MetaMessageInterface):
 
     @clocks_per_click.setter
     def clocks_per_click(self, value):
-        if not isinstance(value, int) or value <= 0 or value >255:
+        if not isinstance(value, int) or value <= 0 or value > 255:
             raise ValueError("Invalid clocks_per_click value. Must be a integer between 1 and 255.")
         self._clocks_per_click = value
 
@@ -434,7 +436,7 @@ class MidiMetaMessageTimeSig(MetaMessageInterface):
 
     @notated_32nd_notes_per_beat.setter
     def notated_32nd_notes_per_beat(self, value):
-        if not isinstance(value, int) or value <= 0 or value >255:
+        if not isinstance(value, int) or value <= 0 or value > 255:
             raise ValueError("Invalid notated_32nd_notes_per_beat value. Must be a integer between 1 and 255.")
         self._notated_32nd_notes_per_beat = value
 
@@ -495,7 +497,6 @@ class MidiMetaMessageMidiPort(MetaMessageInterface):
         self.is_meta = True
         self.time = time
         self.track_idx = track_idx
-
 
     @property
     def port(self):
