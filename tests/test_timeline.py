@@ -1,11 +1,13 @@
 """ Unit tests for isobar_ext """
 
-import isobar_ext as iso
-import pytest
 import time
+
+import pytest
+
+import isobar_ext as iso
 from isobar_ext.io import DummyOutputDevice, MidiOutputDevice
 from . import dummy_timeline
-from isobar_ext.exceptions import InvalidEventException
+
 
 def test_timeline_tempo():
     timeline = iso.Timeline(100)

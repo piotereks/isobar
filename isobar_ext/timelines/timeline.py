@@ -1,27 +1,26 @@
-import math
 import copy
-import time
 import logging
+import math
 import threading
+import time
 import traceback
-from typing import Callable, Any, Optional, Union
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import partial
-from collections.abc import Iterable
+from typing import Callable, Any, Optional, Union
 
-from .track import Track
 from .clock import Clock
 from .event import EventDefaults
-from ..io import MidiOutputDevice, OutputDevice
-from ..pattern import PSequence
-from ..constants import (DEFAULT_TICKS_PER_BEAT, DEFAULT_TEMPO, EVENT_ACTION, EVENT_ACTION_ARGS, EVENT_DURATION,
-                         EVENT_TIME)
+from .track import Track
+from ..constants import (DEFAULT_TICKS_PER_BEAT, DEFAULT_TEMPO, EVENT_ACTION, EVENT_ACTION_ARGS, EVENT_DURATION)
 from ..constants import INTERPOLATION_NONE
 from ..exceptions import (
     TrackLimitReachedException,
     TrackNotFoundException,
     MultipleOutputDevicesException,
 )
+from ..io import MidiOutputDevice, OutputDevice
+from ..pattern import PSequence
 from ..util import make_clock_multiplier
 
 log = logging.getLogger(__name__)

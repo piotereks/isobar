@@ -1,8 +1,11 @@
 """ Unit tests for isobar_ext """
 
-import isobar_ext as iso
-import pytest
 import time
+
+import pytest
+
+import isobar_ext as iso
+
 
 def test_timeline_clock_accuracy():
     #--------------------------------------------------------------------------------

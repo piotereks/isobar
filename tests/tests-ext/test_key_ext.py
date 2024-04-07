@@ -1,5 +1,5 @@
 import isobar_ext as iso
-import pytest
+
 
 def test_key_nearest_note():
     scale = iso.Scale.major

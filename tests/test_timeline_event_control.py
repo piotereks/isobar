@@ -1,9 +1,12 @@
 """ Unit tests for events """
 
-import isobar_ext as iso
-import pytest
 import math
+
+import pytest
+
+import isobar_ext as iso
 from . import dummy_timeline
+
 
 def test_event_control_no_interpolation(dummy_timeline):
     """

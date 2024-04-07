@@ -1,5 +1,6 @@
-from pythonosc.udp_client import SimpleUDPClient
 import time
+
+from pythonosc.udp_client import SimpleUDPClient
 
 
 class NetworkClockSender:

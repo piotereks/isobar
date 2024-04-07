@@ -1,12 +1,12 @@
-from ...pattern import Pattern
-from ..output import OutputDevice
-from ...constants import DEFAULT_TICKS_PER_BEAT
-from ..midi.output import MidiOutputDevice
-from mido import Message, MidiFile, MidiTrack
-
-
 import logging
 import re
+
+from mido import Message, MidiFile, MidiTrack
+
+from ..midi.output import MidiOutputDevice
+from ..output import OutputDevice
+from ...constants import DEFAULT_TICKS_PER_BEAT
+from ...pattern import Pattern
 
 log = logging.getLogger(__name__)
 

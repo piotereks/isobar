@@ -1,10 +1,11 @@
 import logging
 from collections.abc import Iterable
 from functools import partial
+
 import mido
 
 from ..midimessages import (MidiMessageControl, MidiMessageProgram, MidiMessagePitch, MidiMessagePoly, MidiMessageAfter,
-                            MidiMetaMessageTempo, MidiMetaMessageEndTrack, MidiMetaMessageTrackName, 
+                            MidiMetaMessageTempo, MidiMetaMessageEndTrack, MidiMetaMessageTrackName,
                             MidiMetaMessageMidiPort, MidiMetaMessageKey, MidiMetaMessageTimeSig)
 from ..midinote import MidiNote
 from ...constants import (EVENT_NOTE, EVENT_AMPLITUDE, EVENT_DURATION, EVENT_GATE, EVENT_ACTION, EVENT_ACTION_ARGS,

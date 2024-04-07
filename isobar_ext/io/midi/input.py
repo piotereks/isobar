@@ -1,11 +1,12 @@
+import logging
+import os
+import queue
+import time
+
 import mido
 
-import os
-import time
-import queue
-import logging
-from ...exceptions import DeviceNotFoundException
 from ...constants import MIDI_CLOCK_TICKS_PER_BEAT
+from ...exceptions import DeviceNotFoundException
 
 log = logging.getLogger(__name__)
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
-from .core import Pattern
+
 import random
+
+from .core import Pattern
 
 
 class LSystem:

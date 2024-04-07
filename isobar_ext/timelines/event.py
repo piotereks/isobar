@@ -1,11 +1,12 @@
-from ..pattern import Pattern
-from ..scale import Scale
-from ..key import Key
+import logging
+import warnings
+from typing import Iterable
+
 from ..constants import *  # noqa: F403
 from ..exceptions import InvalidEventException
-import logging
-from typing import Iterable
-import warnings
+from ..key import Key
+from ..pattern import Pattern
+from ..scale import Scale
 
 log = logging.getLogger(__name__)
 

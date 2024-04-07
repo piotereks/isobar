@@ -1,7 +1,8 @@
-import pytest
-import isobar_ext as iso
-import mido
 import os
+
+import pytest
+
+import isobar_ext as iso
 
 IN_CI_CD = "GITHUB_ACTION" in os.environ
 

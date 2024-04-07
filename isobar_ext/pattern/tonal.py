@@ -1,10 +1,11 @@
 from __future__ import annotations
-from .core import Pattern
-from ..scale import Scale
-from ..util import midi_note_to_frequency, midi_semitones_to_frequency_ratio
 
 import typing
 from typing import Iterable
+
+from .core import Pattern
+from ..scale import Scale
+from ..util import midi_note_to_frequency, midi_semitones_to_frequency_ratio
 
 
 class PDegree(Pattern):

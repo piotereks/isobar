@@ -1,6 +1,8 @@
 import pytest
+
 import isobar_ext as iso
 from . import dummy_timeline
+
 
 def test_pglobals():
     with pytest.raises(KeyError):

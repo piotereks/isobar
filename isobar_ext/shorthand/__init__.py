@@ -1,6 +1,6 @@
-from .. import *  # noqa: F401, F403
 from .abbreviations import *  # noqa: F403
 from .setup import timeline, track, graph  # noqa: F401
+from .. import *  # noqa: F401, F403
 
 try:
     import signalflow  # noqa: F401

@@ -1,15 +1,15 @@
+import logging
+import random
+import threading
+import time
+from typing import Any
+
 from ..constants import (
     DEFAULT_TEMPO,
     DEFAULT_TICKS_PER_BEAT,
     MIN_CLOCK_DELAY_WARNING_TIME,
 )
 from ..util import make_clock_multiplier
-
-import time
-import random
-import logging
-import threading
-from typing import Any
 
 logger = logging.getLogger(__name__)
 

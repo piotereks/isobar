@@ -1,5 +1,5 @@
-import random
 import copy
+import random
 
 
 class Chord:

@@ -1,10 +1,9 @@
-import os
 import platform
-import isobar_ext as iso
-from isobar_ext.io.midi import MidiInputDevice, MidiOutputDevice
-import pytest
 import time
-from . import dummy_timeline
+
+import pytest
+
+import isobar_ext as iso
 
 VIRTUAL_DEVICE_NAME = "Virtual Device"
 

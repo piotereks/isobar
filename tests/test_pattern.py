@@ -1,7 +1,9 @@
 """ Unit tests for iso """
 
 import pytest
+
 import isobar_ext as iso
+
 
 def test_pattern_stopiteration():
     p = iso.PSequence([1, 2, 3], 1)

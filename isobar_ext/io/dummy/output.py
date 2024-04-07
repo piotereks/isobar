@@ -1,4 +1,5 @@
 import logging
+
 from ..output import OutputDevice
 from ...constants import DEFAULT_TICKS_PER_BEAT
 

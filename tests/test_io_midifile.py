@@ -1,10 +1,11 @@
 """ Unit tests for Key """
 
 import os
+
 import isobar_ext as iso
 from isobar_ext.io.midifile import MidiFileOutputDevice, MidiFileInputDevice
-import pytest
 from . import dummy_timeline
+
 
 def test_io_midifile_write(dummy_timeline):
     events = {

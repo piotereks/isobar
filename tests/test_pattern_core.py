@@ -1,5 +1,7 @@
 import pytest
+
 import isobar_ext as iso
+
 
 def test_pref():
     a = iso.PSequence([1, 2, 3], 1)

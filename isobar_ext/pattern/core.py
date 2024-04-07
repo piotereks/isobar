@@ -3,6 +3,7 @@
 # -------------------------------------------------------------------------------
 
 from __future__ import annotations
+
 import copy
 import inspect
 from typing import Iterable, Callable

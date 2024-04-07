@@ -1,7 +1,8 @@
-from pythonosc.dispatcher import Dispatcher
-from pythonosc.osc_server import BlockingOSCUDPServer
 import threading
 import time
+
+from pythonosc.dispatcher import Dispatcher
+from pythonosc.osc_server import BlockingOSCUDPServer
 
 from ...constants import DEFAULT_TICKS_PER_BEAT
 

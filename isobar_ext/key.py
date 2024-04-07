@@ -1,8 +1,8 @@
-from .scale import Scale
-from .note import Note
-from .util import midi_note_to_note_name, note_name_to_midi_note
-
 import random
+
+from .note import Note
+from .scale import Scale
+from .util import midi_note_to_note_name, note_name_to_midi_note
 
 
 class Key:

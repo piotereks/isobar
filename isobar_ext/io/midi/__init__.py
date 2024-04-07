@@ -1,7 +1,8 @@
+import mido
+
 from .input import MidiInputDevice
 from .output import MidiOutputDevice
 
-import mido
 
 def get_midi_output_names():
     """

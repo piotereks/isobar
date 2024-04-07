@@ -1,13 +1,14 @@
-from ..constants import (   # noqa: F401
+import os
+import sys
+import time
+from typing import Any
+
+from .clock import Clock
+from ..constants import (  # noqa: F401
     DEFAULT_TEMPO,
     DEFAULT_TICKS_PER_BEAT,
     MIN_CLOCK_DELAY_WARNING_TIME,
 )
-from .clock import Clock
-import time
-import sys
-import os
-from typing import Any
 
 try:
     lib_dir = "auxiliary/lib"

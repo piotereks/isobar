@@ -1,6 +1,7 @@
 """ oscillator.py: Regular waveforms as pattern generators. """
 
 from __future__ import annotations
+
 from .core import Pattern
 
 

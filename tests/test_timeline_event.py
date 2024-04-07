@@ -1,8 +1,10 @@
 """ Unit tests for events """
 
-import isobar_ext as iso
 import pytest
+
+import isobar_ext as iso
 from . import dummy_timeline
+
 
 def test_event_degree(dummy_timeline):
     dummy_timeline.schedule({

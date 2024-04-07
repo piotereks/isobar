@@ -1,7 +1,7 @@
+from .. import ALL_EVENT_PARAMETERS
+from ..exceptions import DeviceNotFoundException
 from ..io.midi import MidiOutputDevice
 from ..timelines import Timeline
-from ..exceptions import DeviceNotFoundException
-from .. import ALL_EVENT_PARAMETERS
 
 try:
     from signalflow import *  # noqa: F403

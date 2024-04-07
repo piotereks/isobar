@@ -2,11 +2,12 @@
 MIDI control: Patterns which generate their outputs based on MIDI devices.
 """
 
-from .core import Pattern
-
-from typing import Optional
-import mido
 import os
+from typing import Optional
+
+import mido
+
+from .core import Pattern
 
 
 class isobar_extMIDIManager:

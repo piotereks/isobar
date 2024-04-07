@@ -1,7 +1,9 @@
 """ Unit tests for Key """
 
-import isobar_ext as iso
 import pytest
+
+import isobar_ext as iso
+
 
 def test_key_defaults():
     a = iso.Key()

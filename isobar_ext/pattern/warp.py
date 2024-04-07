@@ -1,7 +1,8 @@
 from __future__ import annotations
-from .core import Pattern
 
 import math
+
+from .core import Pattern
 
 
 class PWarp(Pattern):

@@ -1,7 +1,6 @@
 """ Unit tests for events """
 
 import isobar_ext as iso
-import pytest
 from . import dummy_timeline
 
 class DummySuperColliderOutputDevice(iso.OutputDevice):

@@ -1,4 +1,3 @@
-import pytest
 import isobar_ext as iso
 
 def test_pchanged():

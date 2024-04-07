@@ -1,8 +1,5 @@
-from unittest.mock import Mock
-
 import pytest
 
-from isobar_ext.io.midifile.input import MidiFileInputDevice
 from isobar_ext.io.midimessages import (
     MidiMetaMessageTempo, MidiMetaMessageKey, MidiMetaMessageTimeSig,
     MidiMetaMessageTrackName, MidiMetaMessageMidiPort, MidiMetaMessageEndTrack, MidiMessageControl,

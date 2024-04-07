@@ -1,7 +1,8 @@
 from __future__ import annotations
-import sys
+
 import copy
 import random
+import sys
 
 from .core import Pattern
 from ..util import wnchoice, scale_lin_exp

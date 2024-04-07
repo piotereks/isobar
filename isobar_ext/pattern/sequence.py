@@ -1,18 +1,18 @@
 from __future__ import annotations
-import sys
-import math
+
 import copy  # noqa: F401
-import random
 import itertools
+import logging
+import math
+import random
+import sys
+from functools import reduce
 from typing import Iterable, Callable, List
 
+from .chance import PStochasticPattern
 from .core import Pattern
 from ..chord import Chord
 from ..constants import INTERPOLATION_NONE, INTERPOLATION_LINEAR, INTERPOLATION_COSINE
-from functools import reduce
-from .chance import PStochasticPattern
-
-import logging
 
 log = logging.getLogger(__name__)
 

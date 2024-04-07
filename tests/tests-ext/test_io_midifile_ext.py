@@ -1,19 +1,17 @@
 """ Unit tests for Key """
 
 import os
+from typing import Iterable
+
 # import copy
 import mido
-from typing import Iterable
+import pytest
 
 import isobar_ext as iso
 from isobar_ext.io.midifile import MidiFileOutputDevice, MidiFileInputDevice
-from isobar_ext.io.midimessages import (
-    MidiMetaMessageTempo, MidiMetaMessageKey, MidiMetaMessageTimeSig,
-    MidiMetaMessageTrackName, MidiMetaMessageMidiPort, MidiMetaMessageEndTrack, MidiMessageControl,
-    MidiMessageProgram, MidiMessagePitch, MidiMessagePoly, MidiMessageAfter
-)
-import pytest
 from tests import dummy_timeline, IN_CI_CD
+
+
 # from unittest.mock import MagicMock, Mock
 
 

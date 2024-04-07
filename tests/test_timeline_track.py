@@ -1,8 +1,10 @@
 """ Unit tests for Track """
 
-import isobar_ext as iso
 import pytest
+
+import isobar_ext as iso
 from . import dummy_timeline
+
 
 @pytest.fixture()
 def dummy_track():

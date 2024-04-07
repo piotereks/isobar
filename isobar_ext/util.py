@@ -1,6 +1,7 @@
-import random
 import math
+import random
 from typing import Any, Generator
+
 from .exceptions import InvalidMIDIPitch, UnknownNoteName, ClockException
 
 note_names = [

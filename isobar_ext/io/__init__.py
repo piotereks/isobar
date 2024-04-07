@@ -1,4 +1,4 @@
-from .output import OutputDevice
+from .cv import CVOutputDevice, get_cv_output_devices
 from .dummy import DummyOutputDevice
 from .midi import (
     MidiInputDevice,
@@ -7,11 +7,11 @@ from .midi import (
     get_midi_input_names,
 )
 from .midifile import MidiFileInputDevice, MidiFileOutputDevice, PatternWriterMIDI, FileOut
-from .osc import OSCOutputDevice
-from .cv import CVOutputDevice, get_cv_output_devices
-from .socketio import SocketIOOutputDevice
-from .signalflow import SignalFlowOutputDevice
 from .midinote import MidiNote
+from .osc import OSCOutputDevice
+from .output import OutputDevice
+from .signalflow import SignalFlowOutputDevice
+from .socketio import SocketIOOutputDevice
 from .supercollider import SuperColliderOutputDevice
 
 __all__ = ["OutputDevice", "DummyOutputDevice", "MidiInputDevice", "MidiOutputDevice"]
