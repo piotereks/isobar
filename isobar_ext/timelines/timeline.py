@@ -1,758 +1,662 @@
-import math
-import copy
-import time
-import logging
-import threading
-import traceback
-from typing import Callable, Any, Optional, Union
-from dataclasses import dataclass
-from functools import partial
-from collections.abc import Iterable
+from __future__ import annotations
 
-from .track import Track
-from .clock import Clock
-from .event import EventDefaults
-from ..io import MidiOutputDevice, OutputDevice
-from ..pattern import PSequence
-from ..constants import (DEFAULT_TICKS_PER_BEAT, DEFAULT_TEMPO, EVENT_ACTION, EVENT_ACTION_ARGS, EVENT_DURATION,
-                         EVENT_TIME)
-from ..constants import INTERPOLATION_NONE
-from ..exceptions import (
-    TrackLimitReachedException,
-    TrackNotFoundException,
-    MultipleOutputDevicesException,
-)
-from ..util import make_clock_multiplier
+import copy
+import inspect
+from typing import Union, Optional, Callable, TYPE_CHECKING
+from dataclasses import dataclass
+from typing import Union, Optional, Callable, TYPE_CHECKING
+
+from .event import Event
+
+if TYPE_CHECKING:
+    from .timeline import Timeline
+from ..pattern import Pattern, PSequence, PDict, PInterpolate, PConstant
+from ..constants import *  # noqa: F403
+from ..exceptions import InvalidEventException
+from ..util import midi_note_to_frequency
+from ..io.output import OutputDevice
+import logging
 
 log = logging.getLogger(__name__)
 
 
 @dataclass
-class Action:
-    time: float
-    function: Callable
+class NoteOffEvent:
+    timestamp: float
+    note: int
+    channel: int
+    track_idx : int
 
 
-class Timeline:
-    def __init__(
-            self,
-            tempo: float = DEFAULT_TEMPO,
-            output_device: Any = None,
-            clock_source: Any = None,
-            ticks_per_beat: int = DEFAULT_TICKS_PER_BEAT,
+def get_track_idx(event_obj):
+    # if True:
+    #     return None
+    track_idx = 0
+    if isinstance(event_obj, (dict, PDict)):
+        if trk_idx := event_obj.get('args', {}).get('track_idx', None):
+            if isinstance(trk_idx, PConstant):
+                return trk_idx.constant
+            else:
+                return trk_idx
+    return track_idx
+
+class Track:
+    def __init__(self,
+            timeline: Timeline,
+            max_event_count: Optional[int] = None,
+            interpolate: str = INTERPOLATION_NONE,
+            output_device: Optional[OutputDevice] = None,
+            remove_when_done: bool = True,
+            name: Optional[str] = None,
     ):
         """
-        A Timeline object encapsulates a number of Tracks, each of which
-        represents a sequence of note or control events.
-
-        Timing is driven by a `clock_source`, which can be a real-time Clock object, or an
-        external source such as a `MidiInputDevice` clock.
-
-        A Timeline typically runs until it is terminated by calling `stop()`.
-        If you want the Timeline to terminate as soon as no more events are available,
-        set `stop_when_done = True`.
-
         Args:
-            tempo: The initial tempo, in bpm
-            output_device: The default output device to send events to
-            clock_source: The source of clocking events. If not specified, creates an internal Clock.
-            ticks_per_beat: The timing resolution, in PPQN. Default is 480PPQN, which equates to approximately \
-                            1ms resolution at 120bpm.
+            timeline: The Timeline object that the track inhabits
+            events: A dict, a PDict, or a Pattern that generates dicts.
+            max_event_count: Optionally, the maximum number of events that will be executed. \
+                             The Track will finish automatically once this number of events is complete.
+            interpolate: Optional interpolation to impose on values, particularly for control tracks.
+            output_device: Optional output device. Defaults to the Timeline's default_output_device.
+            remove_when_done: If True, removes the Track from the Timeline when it finishes.
+            name: Optional name for the track. If specified, can be used to update tracks in place by specifying \
+                  its name when scheduling events on the Timeline.
         """
-        self._clock_source: Optional[Clock] = None
-        if clock_source is None:
-            clock_source = Clock(self, tempo, ticks_per_beat)
-        self.set_clock_source(clock_source)
+        # --------------------------------------------------------------------------------
+        # Ensure that events is a pattern that generates a dict when it is iterated.
+        # --------------------------------------------------------------------------------
+        # self.ss_track_idx = None
+        # self.track_idx = None
+        self.event_stream: Pattern = PDict({})
+        self.timeline: Timeline = timeline
+        self.current_time: float = 0.0
+        self.next_event_time: float = sys.maxsize
+        self.max_event_count: int = max_event_count
+        self.current_event_count: int = 0
+        self.name: str = name
 
-        self.clock_multipliers: dict[OutputDevice, Callable] = {}
-        """
-        Clock multipliers are helper generators that perform clock division/
-        multiplication so that devices with different PPQN can work together. For
-        example, isobar_ext's default internal clock runs at 480PPQN, but a MIDI device
-        expects a 24PPQN tick, so a 20x clock divider is needed.
-        """
+        self.current_event: Optional[Event] = None
+        self.next_event: Optional[Event] = None
+        self.interpolating_event: Pattern = PSequence([], 0)
 
-        self.output_devices: list[OutputDevice] = []
-        if output_device:
-            self.add_output_device(output_device)
-        """ The output devices that the timeline is able to schedule events on. """
+        self.output_device: OutputDevice = output_device
+        self.interpolate: bool = interpolate
 
-        self.current_time: float = 0
-        """ The current time, in beats. """
+        self.note_offs: list[NoteOffEvent] = []
+        self.is_muted: bool = False
+        self.is_started: bool = False
+        self.is_finished: bool = False
+        self.remove_when_done: bool = remove_when_done
+        self.on_event_callbacks: list[Callable] = []
 
-        self.max_tracks: int = 0
-        """ If set, limits the number of tracks that can be created.
-        Scheduling a track beyond this limit will generate an exception. """
+    def __getattr__(self, item, default = None):
+        # return self.event_stream[item]
+        return getattr(self.event_stream, 'item', default)
 
-        self.tracks: list[Track] = []
-        """ The list of Track objects that are currently scheduled. """
-
-        self.stop_when_done = False
-        """ If True, stops the timeline when the last track is finished. """
-
-        self.actions = []
-
-        self.running: bool = False
-        """ Indicates whether the timeline is currently running. """
-
-        self.ignore_exceptions = False
-        """
-        If ignore_exceptions is True, exceptions do not halt the timeline,
-        and instead simply generate a warning. This can be useful for contexts
-        such as live performance that require a robust playback environment.
-        """
-
-        self.defaults = EventDefaults()
-        """
-        Defaults can be used to automatically set the parameters of future events.
-        For example, setting defaults.quantize can be used to automatically quantize
-        all future scheduling.
-        """
-
-        self.on_event_callback: Optional[Callable] = None
-        """
-        Optional callback to trigger each time an event is performed.
-        Receives two parameters:
-         - the Track that the event occurred on
-         - the Event object
-        """
-
-    def get_clock_source(self) -> Clock:
-        """
-        The originating Clock object that sends timing ticks to this timeline.
-
-        Returns:
-            Clock: The clock source.
-        """
-        return self._clock_source
-
-    def set_clock_source(self, clock_source: Clock) -> None:
-        """
-        Set the Clock object that will send timing ticks to this timeline.
-
-        Args:
-            clock_source: The clock source.
-        """
-        clock_source.clock_target = self
-        self._clock_source = clock_source
-
-    clock_source = property(get_clock_source, set_clock_source)
-    """ The Clock object that sends timing ticks to this timeline. """
-
-    def get_ticks_per_beat(self) -> int:
-        """
-        Query how many ticks are expected per beat.
-        This varies based on the resolution of the clock source.
-
-        Returns:
-            The number of ticks per beat.
-        """
-        if self.clock_source:
-            return self.clock_source.ticks_per_beat
+    def __setattr__(self, item, value):
+        # --------------------------------------------------------------------------------
+        # Benign magic so that you can do things like
+        #
+        #    track.note = 64
+        #
+        # Note that this will only work when the track has been created with a dict
+        # of key-value pairs (rather than a pattern that will itself generate dicts.)
+        # --------------------------------------------------------------------------------
+        if (
+                item != "event_stream" and
+                isinstance(self.event_stream, PDict) and
+                item in ALL_EVENT_PARAMETERS
+        ):
+            self.event_stream[item] = value
         else:
-            return None
+            super().__setattr__(item, value)
 
-    def set_ticks_per_beat(self, ticks_per_beat: int):
+    def __delattr__(self, item):
+        if (
+                item != "event_stream" and
+                isinstance(self.event_stream, PDict) and
+                item in ALL_EVENT_PARAMETERS
+        ):
+            del self.event_stream[item]
+        else:
+            super().__delattr__(item)
+
+    def start(self,
+    		  events: Union[dict, Pattern],
+              interpolate: Optional[str] = None) -> None:
         """
-        Set the number of ticks per beat.
+        Begin executing the events on this track.
+        Resets the track's time counter to zero.
 
         Args:
-            ticks_per_beat: The new number of ticks per beat. This can be set for internal clocks, but \
-                            not for other clock sources (e.g. MIDI clocks).
-
-        Raises:
-            AttributeError: If the number of ticks per beat cannot be set (for example, for a MIDI clock source).
+            events: A dict, a PDict, or a Pattern that generates dicts.
         """
-        self.clock_source.ticks_per_beat = ticks_per_beat
+        if events is None:
+            events = {}
+        if isinstance(events, dict):
+            events = PDict(events)
+        self.event_stream = events
+        # self.ss_track_idx = get_track_idx(self.event_stream)
 
-    ticks_per_beat = property(get_ticks_per_beat, set_ticks_per_beat)
-    """ The number of ticks that the clock source provides per beat. """
+        self.is_started = True
+        self.current_time = 0.0
+        self.next_event_time = self.current_time
+        if interpolate is not None:
+            self.interpolate = interpolate
+
+    def update(self,
+            events: Union[dict, Pattern],
+            quantize: Optional[float] = None,
+            delay: Optional[float] = None,
+               interpolate: Optional[str] = None):
+        """
+        Update the events that this Track produces.
+
+        Args:
+            events: A dict, a PDict, or a Pattern that generates dicts.
+            quantize: An optional float that specifies the quantization that the update() should follow. \
+                      quantize == 1 means that the update should happen on the next beat boundary.
+            delay: Optional float specifying delay time applied to quantization
+            interpolate: Optional interpolation mode
+        """
+        if quantize is None:
+            quantize = self.timeline.defaults.quantize
+        if delay is None:
+            delay = self.timeline.defaults.delay
+        if (
+                self.output_device is not None and
+                self.output_device.added_latency_seconds > 0.0
+        ):
+            delay += self.timeline.seconds_to_beats(
+                self.output_device.added_latency_seconds
+            )
+
+        # --------------------------------------------------------------------------------
+        # Don't assign to events immediately, because in the case of quantized
+        # updates, the existing stream should keep playing up until the moment
+        # the track is updated.
+        # --------------------------------------------------------------------------------
+        if quantize == 0.0 and delay == 0.0:
+            self.start(events, interpolate=interpolate)
+        else:
+            # --------------------------------------------------------------------------------
+            # Schedule update event. Actions scheduled with schedule_action take place
+            # before the track's tick() event is called.
+            # --------------------------------------------------------------------------------
+            self.timeline._schedule_action(function=lambda: self.start(events, interpolate=interpolate),
+                                           quantize=quantize,
+                                           delay=delay)
+
+    def __str__(self):
+        if self.name:
+            return "Track: %s (pos = %d)" % (self.name, self.current_time)
+        else:
+            return "Track (pos = %d)" % self.current_time
 
     @property
-    def tick_duration(self):
-        """
-        Tick duration, in beats.
-        """
-        return 1.0 / self.ticks_per_beat
-
-    def get_tempo(self) -> float:
-        """
-        Returns the tempo of this timeline's clock, or None if an external
-        clock source is used (in which case the tempo is unknown).
-
-        Returns:
-            The tempo, in BPM.
-        """
-        return self.clock_source.tempo
-
-    def set_tempo(self, tempo: float) -> None:
-        """
-        Set the tempo of this timeline's clock.
-        If the timeline uses an external clock, this operation is invalid, and a
-        RuntimeError is raised.
-
-        Args:
-            tempo: Tempo, in bpm
-        """
-        self.clock_source.tempo = tempo
-
-    tempo = property(get_tempo, set_tempo)
-    """ The tempo of the timeline, in beats per minute. """
-
-    def seconds_to_beats(self, seconds: float) -> float:
-        """
-        Translates a duration in seconds to a duration in beats.
-
-        Args:
-            seconds: The duration to convert, in seconds.
-
-        Returns:
-            The equivalent duration, in beats.
-        """
-        return seconds * self.tempo / 60.0
-
-    def beats_to_seconds(self, beats: float) -> float:
-        """
-        Translates a duration in beats to a duration in seconds.
+    def tick_duration(self) -> float:
+        """Tick duration, in beats."""
+        return self.timeline.tick_duration
 
 
-        Args:
-            beats: The number of beats to convert.
 
-        Returns:
-            The equivalent duration, in seconds.
-        """
-        return beats * 60.0 / self.tempo
+    def process_note_offs(self):
+        # ----------------------------------------------------------------------
+        # Process note_offs before we play the next note, else a repeated note
+        # with gate = 1.0 will immediately be cancelled.
+        #
+        # Use round() to avoid scheduling issues arising from rounding errors.
+        # ----------------------------------------------------------------------
+        # if self.event_stream['args']['track_idx'].constant is not None:
+        # if isinstance(self.event_stream, dict) and self.event_stream.get('args', {}).get('track_idx', None) is not None:
+        #
+        #     track_idx = self.event_stream['args']['track_idx'].constant
+        # else:
+        #     track_idx = 0
+        # if getattr(self, 'track_idx', None) is None:
+        if not hasattr(self, 'track_idx') or getattr(self, 'track_idx', None) == None:
+            track_idx = get_track_idx(self.event_stream)
+            self.track_idx = track_idx
+        else:
+            track_idx = self.track_idx
+        # track_idx = self.ss_track_idx
+
+        for note_off in self.note_offs[:]:
+            if round(note_off.timestamp, 8) <= round(self.current_time, 8):
+                self.output_device.note_off(note_off.note, note_off.channel,
+                   track_idx=track_idx)
+                self.note_offs.remove(note_off)
 
     def tick(self):
         """
-        Must be triggered once every tick to trigger new events. This is the core
-        quantum of Timeline events, and is typically triggered automatically by the
-        timeline's `clock_source`
-
-        Raises:
-            StopIteration: If `stop_when_done` is true and no more events are scheduled.
+        Step forward one tick.
         """
-        # --------------------------------------------------------------------------------
-        # Each time we arrive at precisely a new beat, generate a debug msg.
-        # Round to several decimal places to avoid 7.999999999 syndrome.
-        # http://docs.python.org/tutorial/floatingpoint.html
-        # --------------------------------------------------------------------------------
-        if round(self.current_time, 8) % 1 == 0:
-            log.debug(
-                "--------------------------------------------------------------------------------"
-            )
-            log.debug(
-                "Tick (%d active tracks, %d pending actions)"
-                % (len(self.tracks), len(self.actions))
-            )
 
-        # --------------------------------------------------------------------------------
-        # Process note-offs before scheduled actions, which may reset the timestamp
-        # of the track.
-        # --------------------------------------------------------------------------------
-        for track in self.tracks[:]:
-            track.process_note_offs()
+        if not self.is_started:
+            return
+        # ----------------------------------------------------------------------
+        # Process note_offs before we play the next note, else a repeated note
+        # with gate = 1.0 will immediately be cancelled.
+        # ----------------------------------------------------------------------
+        # if self.event_stream['args']['track_idx'].constant is not None:
 
-        # --------------------------------------------------------------------------------
-        # Copy self.actions because removing from it whilst using it = bad idea.
-        # Perform actions before tracks are executed because an event might
-        # include scheduling a quantized track, which should then be
-        # immediately evaluated.
-        # --------------------------------------------------------------------------------
-        aligned_actions = []
-        for idx, action in enumerate(self.actions[:]):
-            # --------------------------------------------------------------------------------
-            # The only event we currently get in a Timeline are add_track events
-            #  -- which have a function object associated with them.
-            #
-            # Round to work around rounding errors.
-            # http://docs.python.org/tutorial/floatingpoint.html
-            # --------------------------------------------------------------------------------
-            if isinstance(action, dict):
-                action = Action(*action.values())
-                # self.actions[idx] = action
-            if round(action.time, 8) <= round(self.current_time, 8):
-                action.function()
+        # track_idx = 0
+        # if isinstance(self.event_stream, PDict):
+        #     # if self.event_stream.get('args', {}).get('track_idx', {}).get('constant', None) is not None:
+        #     if self.event_stream.get('args', {}).get('track_idx', None) is not None:
+        #         track_idx = self.event_stream['args']['track_idx'].constant
+        # if getattr(self, 'track_idx', None) is None:
+        if not hasattr(self, 'track_idx') or getattr(self, 'track_idx', None) == None:
+            track_idx = get_track_idx(self.event_stream)
+            self.track_idx = track_idx
+        else:
+            track_idx = self.track_idx
+
+        for n, note in enumerate(self.note_offs[:]):
+            if round(note.timestamp, 8) <= round(self.current_time, 8):
+                index = note.note
+                channel = note.channel
+                self.output_device.note_off(index, channel, track_idx=track_idx)
+                # if self.note_offs:
+                self.note_offs.remove(note)
+        try:
+            if self.interpolate is None or self.interpolate == INTERPOLATION_NONE:
+                if round(self.current_time, 8) >= round(self.next_event_time, 8):
+                    while round(self.current_time, 8) >= round(self.next_event_time, 8):
+                        # --------------------------------------------------------------------------------
+                        # Retrieve the next event.
+                        # If no more events are available, this raises StopIteration.
+                        # --------------------------------------------------------------------------------
+                        self.current_event = self.get_next_event()
+                        self.next_event_time += float(self.current_event.duration)
+
+                    # --------------------------------------------------------------------------------
+                    # Perform the event.
+                    # --------------------------------------------------------------------------------
+                    self.perform_event(self.current_event)
             else:
-                aligned_actions.append(action)
-                # self.actions.remove(action)
-        self.actions = aligned_actions
-        # --------------------------------------------------------------------------------
-        # Copy self.tracks because removing from it whilst using it = bad idea
-        # --------------------------------------------------------------------------------
-        for track in self.tracks[:]:
-            try:
-                track.tick()
-            except Exception as e:  # noqa: F841 (but we don't care if it's not used)
-                if self.ignore_exceptions:
-                    tb = traceback.format_exc()
-                    log.warning("*** Exception in track: %s" % tb)
-                    self.tracks.remove(track)
-                else:
-                    raise
-            if track.is_finished and track.remove_when_done:
-                self.tracks.remove(track)
-                log.info(
-                    "Timeline: Track finished, removing from scheduler (total tracks: %d)"
-                    % len(self.tracks)
-                )
+                # --------------------------------------------------------------------------------
+                # Track has interpolation enabled.
+                # Interpolation is done by wrapping the evolving event in an
+                # interpolating_event, which generates a new value each tick until it is
+                # exhausted.
+                # --------------------------------------------------------------------------------
+                try:
+                    interpolated_values = next(self.interpolating_event)
+                    interpolated_event = Event(interpolated_values, self.timeline.defaults, track=self)
+                    self.perform_event(interpolated_event)
+                except StopIteration:
+                    is_first_event = False
+                    if self.next_event is None:
+                        # --------------------------------------------------------------------------------
+                        # The current and next events are needed to perform interpolation.
+                        # No events have yet been obtained, so query the current and next events off
+                        # the stack.
+                        # --------------------------------------------------------------------------------
+                        self.next_event = self.get_next_event()
+                        is_first_event = True
 
-        # --------------------------------------------------------------------------------
-        # If we've run out of notes, raise a StopIteration.
-        # --------------------------------------------------------------------------------
-        if len(self.tracks) == 0 and len(self.actions) == 0 and self.stop_when_done:
-            # TODO: Don't do this if we've never played any events, e.g.
-            #       right after calling timeline.start(). Should at least
-            #       wait for some events to happen first.
-            raise StopIteration
+                    self.current_event = self.next_event
+                    self.next_event = self.get_next_event()
 
-        # --------------------------------------------------------------------------------
-        # Tell our output devices to move forward a step.
-        # --------------------------------------------------------------------------------
-        for device in self.output_devices:
-            clock_multiplier = self.clock_multipliers[device]
-            ticks = next(clock_multiplier)
+                    # --------------------------------------------------------------------------------
+                    # Special case to handle zero-duration events: continue to pop new
+                    # events from the pattern.
+                    # --------------------------------------------------------------------------------
+                    while (
+                            int(self.current_event.duration * self.timeline.ticks_per_beat) <=
+                            0
+                    ):
+                        self.current_event = self.next_event
+                        self.next_event = self.get_next_event()
 
-            for _ in range(ticks):
-                device.tick()
+                    if (
+                            self.current_event.type != EVENT_TYPE_CONTROL or
+                            self.next_event.type != EVENT_TYPE_CONTROL
+                    ):
+                        raise InvalidEventException(
+                            "Interpolation is only valid for control event"
+                        )
 
-        # --------------------------------------------------------------------------------
-        # Increment beat count according to our current tick_length.
-        # --------------------------------------------------------------------------------
+                    interpolating_event_fields = copy.copy(self.current_event.fields)
+                    duration = self.current_event.duration
+                    duration_ticks = duration * self.timeline.ticks_per_beat
+                    for key, value in self.current_event.fields.items():
+                        # --------------------------------------------------------------------------------
+                        # Create a new interpolating_event with patterns for each parameter to
+                        # interpolate.
+                        # --------------------------------------------------------------------------------
+                        if key == EVENT_TYPE or key == EVENT_DURATION:
+                            continue
+                        if type(value) is not float and type(value) is not int:
+                            continue
+                        interpolating_event_fields[key] = PInterpolate(PSequence([self.current_event.fields[key],
+                                    self.next_event.fields[key]], 1),
+                            duration_ticks,
+                            self.interpolate)
+
+                    self.interpolating_event = PDict(interpolating_event_fields)
+                    if not is_first_event:
+                        next(self.interpolating_event)
+                    event = Event(next(self.interpolating_event), self.timeline.defaults, track=self)
+                    self.perform_event(event)
+
+        except StopIteration:
+            if len(self.note_offs) == 0:
+                self.is_finished = True
+
         self.current_time += self.tick_duration
-
-    def dump(self):
-        """
-        Output a summary of this Timeline object to stdout.
-        """
-        print(
-            "Timeline (clock: %s, tempo %s)"
-            % (
-                self.clock_source,
-                self.clock_source.tempo if self.clock_source.tempo else "unknown",
-            )
-        )
-
-        print((" - %d devices" % len(self.output_devices)))
-        for device in self.output_devices:
-            print(("   - %s" % device))
-
-        print((" - %d tracks" % len(self.tracks)))
-        for tracks in self.tracks:
-            print(("   - %s" % tracks))
 
     def reset_to_beat(self):
         """
-        Reset the timer to the last beat.
-        Useful when a MIDI Stop/Reset message is received, or otherwise to re-establish beat sync.
+        Reset the track's time to the nearest integer.
         """
-
         self.current_time = round(self.current_time)
-        for tracks in self.tracks:
-            tracks.reset_to_beat()
 
     def reset(self):
         """
-        Rewind the timeline and all tracks to t = 0.
-        NOTE: This is not the same as re-initialising the timeline to its initial state
-        as it erases any differences in scheduling times between tracks. More thought may be
-        needed for different types of reset/rewind operation.
+        Rewind to the beginning of the pattern.
         """
-        self.current_time = 0.0
-        for track in self.tracks:
-            track.reset()
+        self.current_time = 0
+        self.next_event_time = self.current_time
 
-    def background(self):
-        """
-        Run this Timeline in a background thread.
-        """
-        thread = threading.Thread(target=self.run)
-        thread.daemon = True
-        thread.start()
+        for pattern in self.event_stream.values():
+            try:
+                pattern.reset()
+            except AttributeError:
+                # Event stream may contain constant values, in which case no reset is needed.
+                pass
 
-    def run(self, stop_when_done: bool = None) -> None:
+    def get_next_event(self) -> Event:
         """
-        Run this Timeline in the foreground.
-
-        Args:
-            stop_when_done: If set, returns when no tracks are currently \
-                            scheduled; otherwise, keeps running indefinitely.
-        """
-
-        if stop_when_done is not None:
-            self.stop_when_done = stop_when_done
-
-        try:
-            # --------------------------------------------------------------------------------
-            # Start the clock. This might internal (eg a Clock object, running on
-            # an independent thread), or external (eg a MIDI clock).
-            # --------------------------------------------------------------------------------
-            for device in self.output_devices:
-                device.start()
-            self.running = True
-            self.clock_source.run()
-
-        except StopIteration:
-            # --------------------------------------------------------------------------------
-            # This will be hit if every Pattern in a timeline is exhausted.
-            # --------------------------------------------------------------------------------
-            log.info("Timeline: Finished")
-            self.running = False
-
-        except Exception as e:
-            print((" *** Exception in Timeline thread: %s" % e))
-            if not self.ignore_exceptions:
-                raise e
-
-    def start(self) -> None:
-        """
-        Starts the timeline running in the background.
-        """
-        self.background()
-
-    def stop(self):
-        """
-        Stops the timeline running.
-        """
-        log.info("Timeline: Stopping")
-        for device in self.output_devices:
-            device.all_notes_off()
-            device.stop()
-        self.clock_source.stop()
-
-    def warp(self, warper):
-        """
-        Apply a PWarp object to warp the clock's timing.
-        """
-        self.clock_source.warp(warper)
-
-    def unwarp(self, warper):
-        """
-        Remove a PWarp object from our clock.
-        """
-        self.clock_source.warp(warper)
-
-    def get_output_device(self) -> OutputDevice:
-        """
-        Query the timeline's current OutputDevice.
-        If multiple output devices are currently set (e.g., for a timeline that generates
-        both MIDI and OSC output), raises an exception.
+        Retrieve the next event from the event stream dict.
 
         Returns:
-            OutputDevice: The output device.
+            The next Event object
 
         Raises:
-            MultipleOutputDevicesException: If multiple output devices exist.
+            StopIteration: If no more events are available, or the event count limit has been hit.
+
         """
-        if len(self.output_devices) != 1:
-            raise MultipleOutputDevicesException(
-                "output_device is ambiguous for Timelines with multiple outputs"
-            )
-        return self.output_devices[0]
+        if self.event_stream is None:
+            raise StopIteration
 
-    def set_output_device(self, output_device: OutputDevice) -> None:
-        """
-        Set a new device to send events to, removing any existing outputs.
+        if (
+                self.max_event_count is not None and
+                self.current_event_count >= self.max_event_count
+        ):
+            raise StopIteration
 
-        Args:
-            output_device: The new output device.
-        """
-        self.output_devices = []
-        self.add_output_device(output_device)
+        # ------------------------------------------------------------------------
+        # Iterate to the next event.
+        #  - If self.events is a PDict, this iterates over each of the keys
+        #    and returns a dictionary.
+        #  - If self.events is a pattern which returns a dict, the next value
+        #    is iterated.
+        # Take a copy to avoid modifying the original.
+        # ------------------------------------------------------------------------
+        event_values = next(self.event_stream)
+        event_values = copy.copy(event_values)
 
-    output_device = property(get_output_device, set_output_device)
-    """ The device that events are sent to. """
+        event = Event(event_values, self.timeline.defaults, track=self)
+        self.current_event_count += 1
 
-    def add_output_device(self, output_device: OutputDevice) -> None:
-        """
-        Append a new output device to the timeline's device list.
-        """
-        self.output_devices.append(output_device)
-        self.clock_multipliers[output_device] = make_clock_multiplier(output_device.ticks_per_beat, self.ticks_per_beat)
+        return event
 
-    def schedule(self,
-                 params: dict = None,
-                 quantize: float = None,
-                 delay: float = 0,
-                 count: Optional[int] = None,
-                 interpolate: str = INTERPOLATION_NONE,
-                 output_device: Any = None,
-                 remove_when_done: bool = True,
-                 name: Optional[str] = None,
-                 replace: bool = False,
-                 track_index: Optional[int] = None,
-                 sel_track_idx: Optional[int] = None
-                 ) -> Track:
-        """
-        Schedule a new track within this Timeline.
+    def perform_event(self, event: Event):
 
-        Args:
-            params (dict):           Event dictionary. Keys are generally EVENT_* values, defined in constants.py. \
-                                     If params is None, a new empty Track will be scheduled and returned. \
-                                     This can be updated with Track.update(). \
-                                     params can alternatively be a Pattern that generates a dict output.
-            name (str):              Optional name for the track.
-            quantize (float):        Quantize level, in beats. For example, 1.0 will begin executing the \
-                                     events on the next whole beat.
-            delay (float):           Delay time, in beats, before events should be executed. If `quantize` \
-                                     and `delay` are both specified, quantization is applied, \
-                                     and the event is scheduled `delay` beats after the quantization time.
-            count (int):             Number of events to process, or unlimited if not specified.
-            interpolate (int):       Interpolation mode for control segments.
-            output_device:           Output device to send events to. Uses the Timeline default if not specified.
-            remove_when_done (bool): If True, removes the Track from the Timeline when it is finished.
-                                     Otherwise, retains the Track, so update() can later be called to schedule
-                                     additional events on it.
-            name (str):              Optional name to identify the Track. If given, can be used to update the track's
-                                     parameters in future calls to schedule() by specifying replace=True.
-            replace (bool):          Must be used in conjunction with the `name` parameter. Instead of scheduling a \
-                                     new Track, this updates the parameters of an existing track with the same name.
-            track_index (int):       When specified, inserts the Track at the given index.
-                                     This can be used to set the priority of an event and ensure that it happens
-                                     before another Track is evaluted, used in (e.g.) Track.update().
-            sel_track_idx (int):     Track index to use for event arguments (default: None). This says about midinote track schedule us assigned to
-        Returns:
-            The new `Track` object.
 
-        Raises:
-            TrackLimitReachedException: If `max_tracks` has been reached.
-        """
-        if output_device is None:
-            # --------------------------------------------------------------------------------
-            # If no output device exists, send to the system default MIDI output.
-            # --------------------------------------------------------------------------------
-            if len(self.output_devices) == 0:
-                self.add_output_device(MidiOutputDevice())
-            output_device = self.output_devices[0]
-
-        # --------------------------------------------------------------------------------
-        # This is to ensure EVENT_ACTION split 1 element [1:]
-        # --------------------------------------------------------------------------------
-        if not params:
-            params_list = [{}]
-        elif isinstance(params, list):
-            params_list = params
+        if not hasattr(self, 'track_idx') or getattr(self, 'track_idx', None) == None:
+            track_idx = get_track_idx(self.event_stream)
+            self.track_idx = track_idx
         else:
-            params_list = [params]
+            track_idx = self.track_idx
+        # if not (track_idx := get_track_idx(self.event_stream)):
+        if track_idx is None:
+            if getattr(event, 'fields', {}).get('args', {}).get('track_idx') is not None:
+                track_idx = event.fields['args']['track_idx']
+                self.track_idx = track_idx
 
-        tracks_list = []
-        params_list2 = []
-        event_args = {}
-        for param in params_list:
-            if not isinstance(param, dict) and not isinstance(param, Iterable):
-                param = dict(param)
-            if isinstance(param, dict):
-                action_fun = param.get(EVENT_ACTION, None)
-                event_args = param.get(EVENT_ACTION_ARGS, {})
+
+        if not event.active:
+            return
+        if self.is_muted:
+            return
+
+        # ------------------------------------------------------------------------
+        # Action: Carry out an action each time this event is triggered
+        # ------------------------------------------------------------------------
+        if event.type == EVENT_TYPE_ACTION:
+            try:
+                fn = event.action
+                try:
+                    fn_params = inspect.signature(fn).parameters
+                    for key in event.args.keys():
+                        if key not in fn_params:
+                            raise Exception(
+                                "Named argument not found in callback args: %s" % key
+                            )
+                except ValueError:
+                    # ------------------------------------------------------------------------
+                    # inspect.signature does not work on cython/pybind11 bindings, and
+                    # raises a ValueError. In these cases, simply pass the arguments
+                    # without validation.
+                    # ------------------------------------------------------------------------
+                    pass
+                event.action(**event.args)
+            except StopIteration:
+                raise StopIteration()
+            except Exception as e:
+                print("Exception when handling scheduled action: %s" % e)
+                import traceback
+
+                traceback.print_exc()
+                pass
+
+        # ------------------------------------------------------------------------
+        # Control: Send a control value
+        # ------------------------------------------------------------------------
+        elif event.type == EVENT_TYPE_CONTROL:
+            log.debug(
+                "Control (channel %d, control %d, value %d)",
+                event.channel,
+                event.control,
+                event.value,
+            )
+            self.output_device.control(event.control, event.value, event.channel, track_idx=track_idx)
+
+        # ------------------------------------------------------------------------
+        # Program change
+        # ------------------------------------------------------------------------
+        elif event.type == EVENT_TYPE_PROGRAM_CHANGE:
+            log.debug(
+                "Program change (channel %d, program %d)",
+                event.channel,
+                event.program_change,
+            )
+            self.output_device.program_change(event.program_change, event.channel, track_idx=track_idx)
+
+        # ------------------------------------------------------------------------
+        # address: Send a value to an OSC endpoint
+        # ------------------------------------------------------------------------
+        elif event.type == EVENT_TYPE_OSC:
+            self.output_device.send(event.osc_address, event.osc_params, track_idx=track_idx)
+
+        # ------------------------------------------------------------------------
+        # SuperCollider synth
+        # ------------------------------------------------------------------------
+        elif event.type == EVENT_TYPE_SUPERCOLLIDER:
+            self.output_device.create(event.synth_name, event.synth_params)
+
+        # ------------------------------------------------------------------------
+        # SignalFlow patch
+        # ------------------------------------------------------------------------
+        elif event.type == EVENT_TYPE_PATCH_CREATE:
+            # ------------------------------------------------------------------------
+            # Action: Create patch
+            # ------------------------------------------------------------------------
+            if not hasattr(self.output_device, "create"):
+                raise InvalidEventException(
+                    "Device %s does not support this kind of event" % self.output_device
+                )
+            params = dict(
+                (key, Pattern.value(value)) for key, value in event.params.items()
+            )
+            if hasattr(event, "note"):
+                notes = event.note if hasattr(event.note, "__iter__") else [event.note]
+
+                for note in notes:
+                    if note > 0:
+                        # TODO: Should use None to denote rests
+                        params["frequency"] = midi_note_to_frequency(note)
+                        self.output_device.create(
+                            event.patch, params, output=event.output, track_idx=track_idx
+                        )
             else:
-                action_fun, event_args = None, {}
+                self.output_device.create(event.patch, params, output=event.output, track_idx=track_idx)
 
-            if action_fun and isinstance(action_fun, Iterable):
-                attributes1 = vars(action_fun)
-                # Get the attributes used by the class constructor
-                constructor_attributes = list(PSequence.__init__.__code__.co_varnames[1:])
+        elif (
+                event.type == EVENT_TYPE_PATCH_SET or event.type == EVENT_TYPE_PATCH_TRIGGER
+        ):
+            # ------------------------------------------------------------------------
+            # Action: Set patch's input(s) and/or trigger an event
+            # ------------------------------------------------------------------------
+            for key, value in event.params.items():
+                value = Pattern.value(value)
+                event.patch.set_input(key, value)
 
-                # Filter the modified attributes to include only those used by the constructor
-                attributes = {k: v for k, v in attributes1.copy().items() if
-                              k in constructor_attributes}
-                attributes2 = {k: v for k, v in attributes1.copy().items() if
-                               k in constructor_attributes}
-                action_fun2 = [
-                                  partial(f, self) if isinstance(f, partial) else f
-                                  for f in copy.copy(action_fun)
-                              ][:1]
-                attributes2['sequence'] = action_fun2
-                action_fun2 = PSequence(**attributes2)
-                params2 = copy.copy(param)
-                params2[EVENT_ACTION] = action_fun2
-                if bool(event_args):
-                    params2[EVENT_ACTION_ARGS] = event_args
-                dur2 = list(params2.pop(EVENT_DURATION, None))
+            if hasattr(event, "note"):
+                event.patch.set_input("frequency", midi_note_to_frequency(event.note))
 
-                if dur2:
-                    params2[EVENT_DURATION] = PSequence(dur2[:1], repeats=1)
-                params_list2.append(params2)
-
-                action_fun = [partial(f, self) if isinstance(f, partial) else f for f in copy.copy(action_fun)][1:]
-                attributes['sequence'] = action_fun
-                action_fun = PSequence(**attributes)
-                param[EVENT_ACTION] = action_fun
-                if event_args:
-                    param[EVENT_ACTION_ARGS] = event_args
-
-                dur = list(param.pop(EVENT_DURATION, None))
-
-                if dur:
-                    param["delay"] = dur[0]
-                    param[EVENT_DURATION] = PSequence(dur[1:], repeats=1)
-
-            elif action_fun:
-                param[EVENT_ACTION] = action_fun
-                if bool(event_args):
-                    param[EVENT_ACTION_ARGS] = event_args
-
-            params_list2.append(param)
-
-
-        # --------------------------------------------------------------------------------
-        # If replace=True is specified, updated the params of any existing track
-        # with the same name. If none exists, proceed to create it as usual.
-        # --------------------------------------------------------------------------------
-        for param in params_list2:
-            if isinstance(param, dict):
-                extra_delay = param.pop("delay", None)
-            else:
-                extra_delay = None
-            if replace:
-                if name is None:
-                    raise ValueError("Must specify a track name if `replace` is specified")
-                for existing_track in self.tracks:
-                    if existing_track.name == name:
-                        existing_track.update(param, quantize=quantize)
-                        return  # TODO - review this return in multi track case
-
-            if self.max_tracks and len(self.tracks) >= self.max_tracks:
-                raise TrackLimitReachedException(
-                    "Timeline: Refusing to schedule track (hit limit of %d)" % self.max_tracks)
-
-            def start_track(track_int):
-                # --------------------------------------------------------------------------------
-                # Add a new track.
-                # --------------------------------------------------------------------------------
-                if track_index is not None:
-                    self.tracks.insert(track_index, track_int)
-                else:
-                    self.tracks.append(track_int)
-                log.info("Timeline: Scheduled new track (total tracks: %d)" % len(self.tracks))
-
-            if not bool(event_args) and sel_track_idx is not None:
-            # if not bool(event_args):
-                event_args = {"track_idx": sel_track_idx}
-                if not bool(param.get(EVENT_ACTION_ARGS, {})):
-                    param[EVENT_ACTION_ARGS] = event_args
-
-            if isinstance(param, Track):
-                track = param
-                track.reset()
-            else:
-                # --------------------------------------------------------------------------------
-                # Take a copy of params to avoid modifying the original
-                # --------------------------------------------------------------------------------
-                track = Track(
-                    self,
-                    max_event_count=count,
-                    interpolate=interpolate,
-                    output_device=output_device,
-                    remove_when_done=remove_when_done,
-                    name=name
+            if event.type == EVENT_TYPE_PATCH_TRIGGER:
+                # ------------------------------------------------------------------------
+                # Action: Trigger a patch
+                # ------------------------------------------------------------------------
+                if not hasattr(self.output_device, "trigger"):
+                    raise InvalidEventException(
+                        "Device %s does not support this kind of event"
+                        % self.output_device
+                    )
+                params = dict(
+                    (key, Pattern.value(value)) for key, value in event.params.items()
+                )
+                self.output_device.trigger(
+                    event.patch, event.trigger_name, event.trigger_value, track_idx=track_idx
                 )
 
-                track.update(copy.copy(param), quantize=quantize, delay=delay or extra_delay)
-            tracks_list.append(track)
+        # ------------------------------------------------------------------------
+        # Note: Classic MIDI note
+        # ------------------------------------------------------------------------
+        elif event.type == EVENT_TYPE_NOTE:
+            # ----------------------------------------------------------------------
+            # event: Certain devices (eg Socket IO) handle generic events,
+            #        rather than note_on/note_off. (Should probably have to
+            #        register for this behaviour rather than happening magically...)
+            # ----------------------------------------------------------------------
+            if hasattr(self.output_device, "event") and callable(
+                    getattr(self.output_device, "event")
+            ):
+                d = copy.copy(event)
+                for key, value in list(d.items()):
+                    # ------------------------------------------------------------------------
+                    # Turn non-builtin objects into their string representations.
+                    # We don't want to call repr() on numbers as it turns them into strings,
+                    # which we don't want to happen in our resultant JSON.
+                    # TODO: There absolutely must be a way to do this for all objects which are
+                    #       non-builtins... ie, who are "class" instances rather than "type".
+                    #
+                    #       We could check dir(__builtins__), but for some reason, __builtins__ is
+                    #       different here than it is outside of a module!?
+                    #
+                    #       Instead, go with the lame option of listing "primitive" types.
+                    # ------------------------------------------------------------------------
+                    if type(value) not in (int, float, bool, str, list, dict, tuple):
+                        value = repr(value)
+                        d[key] = value
 
-            # if quantize is None:
-            #     quantize = self.defaults.quantize
-            # if quantize or delay or extra_delay:
-            #     # if quantize or delay:
-            #     # --------------------------------------------------------------------------------
-            #     # We don't want to begin events right away -- either wait till
-            #     # the next beat boundary (quantize), or delay a number of beats.
-            #     # --------------------------------------------------------------------------------
-            #     scheduled_time = self.current_time
-            #     if quantize:
-            #         scheduled_time = quantize * math.ceil(float(self.current_time) / quantize)
-            #     scheduled_time += delay or extra_delay or 0
-            #     # scheduled_time += delay
-            #     self.actions.append({
-            #         EVENT_TIME: scheduled_time,
-            #         EVENT_ACTION: lambda t=track: start_track(t)
-            #     })
-            # else:
-            #     pass
-                # --------------------------------------------------------------------------------
-                # Begin events on this track right away.
-                # --------------------------------------------------------------------------------
-            start_track(track)
+                self.output_device.event(d)
+                return
 
-        if len(tracks_list) > 1:
-            track = tracks_list
-        elif len(tracks_list) == 1:
-            track = tracks_list[0]
+            # ----------------------------------------------------------------------
+            # note_on: Standard (MIDI) type of device
+            # ----------------------------------------------------------------------
+            # if type(event.amplitude) is tuple or event.amplitude > 0:
+            if type(event.amplitude) is tuple or True:
+                # TODO: pythonic duck-typing approach might be better
+                # TODO: doesn't handle arrays of amp, channel event, etc
+                notes = event.note if hasattr(event.note, "__iter__") else [event.note]
+
+                # ----------------------------------------------------------------------
+                # Allow for arrays of amp, gate etc, to handle chords properly.
+                # Caveat: Things will go horribly wrong for an array of amp/gate event
+                # shorter than the number of notes.
+                # ----------------------------------------------------------------------
+                for index, note in enumerate(notes):
+                    amp = (
+                        event.amplitude[index]
+                        if isinstance(event.amplitude, tuple)
+                        else event.amplitude
+                    )
+                    channel = (
+                        event.channel[index]
+                        if isinstance(event.channel, tuple)
+                        else event.channel
+                    )
+                    gate = (
+                        event.gate[index]
+                        if isinstance(event.gate, tuple)
+                        else event.gate
+                    )
+                    # TODO: Add an EVENT_SUSTAIN that allows absolute note lengths to be specified
+
+                    # if (amp is not None and amp > 0) and (gate is not None and gate > 0):
+                    if (amp is not None) and (gate is not None):
+                        self.output_device.note_on(note, amp, channel, track_idx=track_idx)
+
+                        note_dur = event.duration * gate
+                        note_off_time = self.current_time + note_dur
+                        note_off = NoteOffEvent(note_off_time, note, channel, track_idx=track_idx)
+                        self.note_offs.append(note_off)
+                if event.pitchbend is not None:
+                    self.output_device.pitch_bend(event.pitchbend, channel)
         else:
-            track = None
+            raise InvalidEventException("Invalid event type: %s" % event.type)
 
-        return track
+        if self.timeline.on_event_callback:
+            self.timeline.on_event_callback(self, event)
 
-    # --------------------------------------------------------------------------------
-    # Backwards-compatibility
-    # --------------------------------------------------------------------------------
-    sched = schedule
+        if self.on_event_callbacks:
+            for callback in self.on_event_callbacks:
+                callback(event)
 
-    def unschedule(self, track):
+    def stop(self):
+        self.timeline.unschedule(self)
+
+    def mute(self) -> None:
         """
-        Remove a track from playback.
+        Mutes the track. Subsequent events will be silenced until an unmute() is received.
+        """
+        self.is_muted = True
+
+    def unmute(self) -> None:
+        """
+        Unmutes the track.
+        """
+        self.is_muted = False
+
+    def add_event_callback(self, callback: Callable):
+        """
+        Callback to trigger when an event takes place.
+        Useful for displaying GUI changes to reflect underlying events.
+
+        The callback recents a single arg containing the Event.
+        """
+        self.on_event_callbacks.append(callback)
+
+    def remove_event_callback(self, callback: Callable):
+        """
+        Remove an event callback.
 
         Args:
-            track: The Track object.
-
-        Raises:
-            TrackNotFoundException: If the track is not playing.
+            callback: The callback to remove.
         """
-        if track not in self.tracks:
-            raise TrackNotFoundException("Track is not currently scheduled")
-        self.tracks.remove(track)
-
-    def _schedule_action(
-            self, function: Callable, quantize: float = 0.0, delay: float = 0.0
-    ) -> None:
-        """
-        Schedule a function to be called at the given time offset.
-
-        Args:
-            function: The function to call
-            quantize: The quantization level, in beats
-            delay: The delay, in beats
-        """
-        scheduled_time = self.current_time
-        if quantize:
-            scheduled_time = quantize * math.ceil(float(self.current_time) / quantize)
-        scheduled_time += delay
-        action = Action(scheduled_time, function)
-        self.actions.append(action)
-
-    def get_track(self, track_id: Union[int, str]) -> Optional[Track]:
-        """
-        Get the Track corresponding to the given track_id.
-        track_id can be a numeric index, or the name corresponding to a track.
-
-        Args:
-            track_id: An index or name
-
-        Returns:
-            The Track object, or None if not found.
-        """
-        if isinstance(track_id, int):
-            return self.tracks[track_id]
-        elif isinstance(track_id, str):
-            for track in self.tracks:
-                if track.name == track_id:
-                    return track
-            return None
-        else:
-            raise TypeError("Invalid type for track_id (must be an int or str)")
-
-    def clear(self) -> None:
-        """
-        Remove all tracks.
-        """
-        for track in self.tracks[:]:
-            self.unschedule(track)
-
-    def wait(self):
-        """
-        Sleep until the timeline is finished.
-        If the timeline never finishes, sleep forever.
-        """
-        while self.running:
-            time.sleep(0.1)
+        self.on_event_callbacks.remove(callback)
