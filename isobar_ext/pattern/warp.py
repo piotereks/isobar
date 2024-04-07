@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import math
 
-from .core import Pattern
 from .chance import PWhite
+from .core import Pattern
 
 
 class PWarp(Pattern):

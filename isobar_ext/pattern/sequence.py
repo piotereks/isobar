@@ -864,7 +864,7 @@ class PExplorer(Pattern):
 
     def __repr__(self):
         return ("PExplorer(%s, %s, %s, %s, %s, %s, %s)" % (
-        self.density, self.length, self.length_min, self.length_max, self.value_max, self.jump_max, self.loop))
+            self.density, self.length, self.length_min, self.length_max, self.value_max, self.jump_max, self.loop))
 
     def reset(self):
         super().reset()

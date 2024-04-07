@@ -203,8 +203,8 @@ class Track:
         #     track_idx = 0
         # if getattr(self, 'track_idx', None) is None:
         if (
-            not hasattr(self, 'track_idx')
-            or getattr(self, 'track_idx', None) is None
+                not hasattr(self, 'track_idx')
+                or getattr(self, 'track_idx', None) is None
         ):
             track_idx = get_track_idx(self.event_stream)
             self.track_idx = track_idx
@@ -237,8 +237,8 @@ class Track:
         #         track_idx = self.event_stream['args']['track_idx'].constant
         # if getattr(self, 'track_idx', None) is None:
         if (
-            not hasattr(self, 'track_idx')
-            or getattr(self, 'track_idx', None) is None
+                not hasattr(self, 'track_idx')
+                or getattr(self, 'track_idx', None) is None
         ):
             track_idx = get_track_idx(self.event_stream)
             self.track_idx = track_idx
@@ -326,10 +326,10 @@ class Track:
         duration = self.current_event.duration
         duration_ticks = duration * self.timeline.ticks_per_beat
         for key, value in self.current_event.fields.items():
-                        # --------------------------------------------------------------------------------
-                        # Create a new interpolating_event with patterns for each parameter to
-                        # interpolate.
-                        # --------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------------
+            # Create a new interpolating_event with patterns for each parameter to
+            # interpolate.
+            # --------------------------------------------------------------------------------
             if key in [EVENT_TYPE, EVENT_DURATION]:
                 continue
             if type(value) is not float and type(value) is not int:
@@ -630,8 +630,8 @@ class Track:
         #     track_idx = self.event_stream['args']['track_idx'].constant
         # if getattr(self, 'track_idx', None) is None:
         if (
-            not hasattr(self, 'track_idx')
-            or getattr(self, 'track_idx', None) is None
+                not hasattr(self, 'track_idx')
+                or getattr(self, 'track_idx', None) is None
         ):
             track_idx = get_track_idx(self.event_stream)
             self.track_idx = track_idx

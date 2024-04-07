@@ -4,6 +4,7 @@ import sys
 
 from .core import Pattern
 
+
 #  taken out from sequence due to circular dependency
 
 
