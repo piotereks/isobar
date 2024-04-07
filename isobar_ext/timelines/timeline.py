@@ -34,8 +34,7 @@ class Action:
 
 
 class Timeline:
-    def __init__(
-            self,
+    def __init__(self,
             tempo: float = DEFAULT_TEMPO,
             output_device: Any = None,
             clock_source: Any = None,
@@ -274,6 +273,7 @@ class Timeline:
                 # self.actions[idx] = action
             if round(action.time, 8) <= round(self.current_time, 8):
                 action.function()
+                self.actions.remove(action)
             else:
                 aligned_actions.append(action)
                 # self.actions.remove(action)
@@ -609,8 +609,13 @@ class Timeline:
                     raise ValueError("Must specify a track name if `replace` is specified")
                 for existing_track in self.tracks:
                     if existing_track.name == name:
-                        existing_track.update(param, quantize=quantize)
-                        return  # TODO - review this return in multi track case
+                        existing_track.update(param,
+                                              quantize=quantize,
+                                              delay=delay,
+                                              interpolate=interpolate)
+                        # TODO: Add unit test for update interpolate
+                        # TODO: Add unit test around this (returning the track?)
+                        return existing_track
 
             if self.max_tracks and len(self.tracks) >= self.max_tracks:
                 raise TrackLimitReachedException(
@@ -651,28 +656,7 @@ class Timeline:
                 track.update(copy.copy(param), quantize=quantize, delay=delay or extra_delay)
             tracks_list.append(track)
 
-            # if quantize is None:
-            #     quantize = self.defaults.quantize
-            # if quantize or delay or extra_delay:
-            #     # if quantize or delay:
-            #     # --------------------------------------------------------------------------------
-            #     # We don't want to begin events right away -- either wait till
-            #     # the next beat boundary (quantize), or delay a number of beats.
-            #     # --------------------------------------------------------------------------------
-            #     scheduled_time = self.current_time
-            #     if quantize:
-            #         scheduled_time = quantize * math.ceil(float(self.current_time) / quantize)
-            #     scheduled_time += delay or extra_delay or 0
-            #     # scheduled_time += delay
-            #     self.actions.append({
-            #         EVENT_TIME: scheduled_time,
-            #         EVENT_ACTION: lambda t=track: start_track(t)
-            #     })
-            # else:
-            #     pass
-                # --------------------------------------------------------------------------------
-                # Begin events on this track right away.
-                # --------------------------------------------------------------------------------
+
             start_track(track)
 
         if len(tracks_list) > 1:
